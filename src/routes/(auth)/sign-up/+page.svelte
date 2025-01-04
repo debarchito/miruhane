@@ -38,10 +38,10 @@
       </Button>
       <Separator class="mx-auto max-w-10" />
       <div class="grid grid-cols-2 gap-4">
-        <Button variant="outline" class="w-full bg-white">
+        <Button variant="outline" class="w-full">
           <Google />
         </Button>
-        <Button variant="outline" class="w-full bg-[#24292F] text-white hover:bg-[#24292F]/20">
+        <Button variant="outline" class="w-full">
           <GitHub />
         </Button>
       </div>
