@@ -16,7 +16,8 @@
     "db:gen": "drizzle-kit generate --config drizzle.config.ts",
     "db:push": "drizzle-kit push --config drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
-    "db:studio": "drizzle-kit studio --config drizzle.config.ts"
+    "db:studio": "drizzle-kit studio --config drizzle.config.ts",
+    "comp:add": "pnpm dlx shadcn-svelte@next add"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.4",
@@ -25,12 +26,14 @@
     "@sveltejs/vite-plugin-svelte": "^4.0.4",
     "@types/node": "^22.10.5",
     "autoprefixer": "^10.4.20",
+    "bits-ui": "1.0.0-next.77",
     "clsx": "^2.1.1",
     "drizzle-kit": "^0.22.8",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-svelte": "^2.46.1",
     "globals": "^15.14.0",
+    "lucide-svelte": "^0.469.0",
     "prettier": "^3.4.2",
     "prettier-plugin-svelte": "^3.3.2",
     "prettier-plugin-tailwindcss": "^0.6.9",
@@ -49,6 +52,7 @@
     "@oslojs/crypto": "^1.0.1",
     "@oslojs/encoding": "^1.1.0",
     "drizzle-orm": "^0.33.0",
+    "mode-watcher": "^0.5.0",
     "postgres": "^3.4.5"
   }
 }
