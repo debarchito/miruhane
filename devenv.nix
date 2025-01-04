@@ -11,4 +11,5 @@
     typescript-language-server
     svelte-language-server
   ];
+  enterShell = "pnpm db:up";
 }
