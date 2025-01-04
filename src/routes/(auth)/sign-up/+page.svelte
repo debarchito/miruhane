@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Send } from "lucide-svelte";
+  import { ShieldCheck } from "lucide-svelte";
   import * as Card from "$lib/components/ui/card/index.js";
   import Google from "$lib/components/icons/Google.svelte";
   import GitHub from "$lib/components/icons/GitHub.svelte";
@@ -33,8 +33,8 @@
         <Input id="confirm-password" type="password" placeholder="~!@#$%^&" required />
       </div>
       <Button type="submit" class="w-full">
-        <Send />
-        Send OTP
+        <ShieldCheck />
+        Verify
       </Button>
       <Separator class="mx-auto max-w-10" />
       <div class="grid grid-cols-2 gap-4">
