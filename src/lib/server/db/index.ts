@@ -8,4 +8,3 @@ if (!env.POSTGRES_PASSWORD) throw new Error("Postgres password is not set");
 const url = `postgres://${env.POSTGRES_USER}:${env.POSTGRES_PASSWORD}@0.0.0.0:5432/miruhanedb`;
 const client = postgres(url);
 export const db = drizzle(client);
-
