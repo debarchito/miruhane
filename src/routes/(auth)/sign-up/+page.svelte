@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { LogIn } from "lucide-svelte";
+  import { Send } from "lucide-svelte";
   import * as Card from "$lib/components/ui/card/index.js";
   import Google from "$lib/components/icons/Google.svelte";
   import GitHub from "$lib/components/icons/GitHub.svelte";
@@ -11,8 +11,8 @@
 
 <Card.Root class="mx-auto max-w-sm">
   <Card.Header>
-    <Card.Title class="text-2xl">Sign In</Card.Title>
-    <Card.Description>Enter your email to sign in to your account</Card.Description>
+    <Card.Title class="text-2xl">Sign Up</Card.Title>
+    <Card.Description>Enter your email to sign up for an account</Card.Description>
   </Card.Header>
   <Card.Content>
     <div class="grid gap-4">
@@ -23,13 +23,18 @@
       <div class="grid gap-2">
         <div class="flex items-center">
           <Label for="password">Password</Label>
-          <a href="##" class="ml-auto inline-block text-sm underline"> Forgot your password? </a>
         </div>
         <Input id="password" type="password" placeholder="~!@#$%^&" required />
       </div>
+      <div class="grid gap-2">
+        <div class="flex items-center">
+          <Label for="confirm-password">Confirm password</Label>
+        </div>
+        <Input id="confirm-password" type="password" placeholder="~!@#$%^&" required />
+      </div>
       <Button type="submit" class="w-full">
-        <LogIn />
-        Sign In
+        <Send />
+        Send OTP
       </Button>
       <Separator class="mx-auto max-w-10" />
       <div class="grid grid-cols-2 gap-4">
@@ -42,8 +47,8 @@
       </div>
     </div>
     <div class="mt-4 text-center text-sm">
-      Don't have an account?
-      <a href="/sign-up" class="underline">Sign Up</a>
+      Already have an account?
+      <a href="/sign-in" class="underline">Sign In</a>
     </div>
   </Card.Content>
 </Card.Root>
