@@ -1,12 +1,12 @@
 <script lang="ts">
-  import RootMenuBar from "$lib/components/custom/MenuBar.svelte";
+  import MenuBar from "$lib/components/custom/MenuBar.svelte";
 
   let { children } = $props();
 </script>
 
 <div class="relative min-h-screen">
   <div class="relative z-10">
-    <RootMenuBar />
+    <MenuBar />
     {@render children()}
   </div>
 </div>
