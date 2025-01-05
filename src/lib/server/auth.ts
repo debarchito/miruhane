@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import * as argon2 from "argon2";
 import { db } from "$lib/server/db";
 import { sha256 } from "@oslojs/crypto/sha2";
 import * as table from "$lib/server/db/schema";
@@ -79,3 +80,7 @@ export function deleteSessionTokenCookie(event: RequestEvent) {
     path: "/",
   });
 }
+
+export const hashPassword = async (password: string): Promise<string> => {
+  return await argon2.hash(password);
+};
