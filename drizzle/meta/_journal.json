@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1736052761104,
-      "tag": "0000_ambiguous_emma_frost",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1736078541934,
-      "tag": "0001_bitter_network",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1736079277844,
-      "tag": "0002_dashing_puff_adder",
+      "when": 1736091423457,
+      "tag": "0000_worried_vance_astro",
       "breakpoints": true
     }
   ]

@@ -1,5 +1,5 @@
 {
-  "id": "2258bc6b-7df5-4d03-9eaa-8b463432dfc3",
+  "id": "0589f097-cce5-4a63-80ba-247d2f66c9fe",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -14,11 +14,18 @@
           "primaryKey": true,
           "notNull": true
         },
-        "username": {
-          "name": "username",
+        "user_id": {
+          "name": "user_id",
           "type": "varchar(32)",
           "primaryKey": false,
           "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         },
         "expires_at": {
           "name": "expires_at",
@@ -29,11 +36,11 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "session_username_user_id_fk": {
-          "name": "session_username_user_id_fk",
+        "session_user_id_user_id_fk": {
+          "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": ["username"],
+          "columnsFrom": ["user_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -69,18 +76,35 @@
           "type": "varchar(43)",
           "primaryKey": false,
           "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_email": {
+          "name": "idx_email",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "user_email_unique": {
-          "name": "user_email_unique",
-          "nullsNotDistinct": false,
-          "columns": ["email"]
-        }
-      }
+      "uniqueConstraints": {}
     }
   },
   "enums": {},

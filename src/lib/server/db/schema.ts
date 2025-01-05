@@ -10,7 +10,7 @@ export const user = pgTable(
     email: varchar("email", { length: 254 }).notNull(),
     // default output length is 32 + 1/3 of 32 = 43
     passwordHash: varchar("password_hash", { length: 43 }).notNull(),
-    created_at: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
   },
   (table) => ({
     idx_email: uniqueIndex("idx_email").on(table.email),
@@ -22,6 +22,7 @@ export const session = pgTable("session", {
   userId: varchar("user_id", { length: 32 })
     .notNull()
     .references(() => user.id),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
   expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
 });
 
