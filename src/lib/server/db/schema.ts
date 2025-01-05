@@ -6,8 +6,8 @@ export const user = pgTable("user", {
   username: varchar("username", { length: 32 }).notNull(),
   // RFC 5321, SMTP Protocol, limits the email address to 254 characters
   email: varchar("email", { length: 254 }).notNull().unique(),
-  // 16 bytes is enough for an argon2id hash, but we went with 32 bytes either way
-  passwordHash: varchar("password_hash", { length: 256 }).notNull(),
+  // default output length is 32 + 1/3 of 32 = 43
+  passwordHash: varchar("password_hash", { length: 43 }).notNull(),
 });
 
 export const session = pgTable("session", {

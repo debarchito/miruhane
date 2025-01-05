@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS "user" (
 	"id" varchar(32) PRIMARY KEY NOT NULL,
 	"username" varchar(32) NOT NULL,
 	"email" varchar(254) NOT NULL,
-	"password_hash" varchar(256) NOT NULL,
+	"password_hash" varchar(43) NOT NULL,
 	CONSTRAINT "user_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
