@@ -1,4 +1,4 @@
-import { pgTable, varchar, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, varchar, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const user = pgTable(
   "user",
@@ -7,12 +7,14 @@ export const user = pgTable(
     // usernames don't have to be unique; uniqueness is enforced by the id and email
     username: varchar("username", { length: 32 }).notNull(),
     // RFC 5321, SMTP Protocol, limits the email address to 254 characters
-    email: varchar("email", { length: 254 }).notNull().unique(),
+    email: varchar("email", { length: 254 }).notNull(),
     // default output length is 32 + 1/3 of 32 = 43
     passwordHash: varchar("password_hash", { length: 43 }).notNull(),
     created_at: timestamp("created_at").notNull().defaultNow(),
   },
-  (table) => [index("idx_email").on(table.email)],
+  (table) => ({
+    idx_email: uniqueIndex("idx_email").on(table.email),
+  }),
 );
 
 export const session = pgTable("session", {

@@ -15,6 +15,13 @@
       "when": 1736078541934,
       "tag": "0001_bitter_network",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1736079277844,
+      "tag": "0002_dashing_puff_adder",
+      "breakpoints": true
     }
   ]
 }
