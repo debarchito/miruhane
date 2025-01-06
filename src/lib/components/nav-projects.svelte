@@ -15,7 +15,6 @@
       url: string;
       // This should be `Component` after lucide-svelte updates types
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      icon?: any;
     }[];
   } = $props();
 
@@ -33,9 +32,6 @@
         <Sidebar.MenuButton>
           {#snippet child({ props })}
             <a href={item.url} {...props}>
-              {#if item.icon}
-                <item.icon />
-              {/if}
               <span>{item.name}</span>
             </a>
           {/snippet}
