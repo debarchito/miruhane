@@ -5,7 +5,6 @@
   import Send from "lucide-svelte/icons/send";
   import Settings2 from "lucide-svelte/icons/settings-2";
   import SquareTerminal from "lucide-svelte/icons/square-terminal";
-  import { Square } from "lucide-svelte";
 
   const data = {
     user: {
@@ -115,19 +114,19 @@
     projects: [
       {
         name: "History 1 : Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-        url: "#",
+        url: "#1",
       },
       {
         name: "History 2 : Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-        url: "#",
+        url: "#2",
       },
       {
         name: "History 3 : Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-        url: "#",
+        url: "#3",
       },
       {
         name: "History 4 : Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-        url: "#",
+        url: "#4",
       },
 
       // For more than 4 history items, show the "More" button.
@@ -155,7 +154,7 @@
           {#snippet child({ props })}
             <a href="##" {...props}>
               <div
-                class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
+                class="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg"
               >
                 <Command class="size-4" />
               </div>

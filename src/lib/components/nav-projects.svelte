@@ -19,6 +19,10 @@
   } = $props();
 
   const sidebar = useSidebar();
+
+  function deleteProject(item: { name: string; url: string }) {
+    projects = projects.filter((project) => project.url !== item.url);
+  }
 </script>
 
 <Sidebar.Group class="group-data-[collapsible=icon]:hidden">
@@ -62,7 +66,7 @@
               <Archive class="text-muted-foreground" />
               <span>Archive</span>
             </DropdownMenu.Item>
-            <DropdownMenu.Item>
+            <DropdownMenu.Item onclick={() => deleteProject(item)}>
               <Trash2 class="text-red-500" />
               <span class="text-red-500">Delete</span>
             </DropdownMenu.Item>
