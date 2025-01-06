@@ -131,7 +131,6 @@
       },
 
       // For more than 4 history items, show the "More" button.
-      
     ],
   };
 </script>
