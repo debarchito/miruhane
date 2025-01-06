@@ -1,15 +1,13 @@
 <script lang="ts">
-  import BadgeCheck from "lucide-svelte/icons/badge-check";
   import Bell from "lucide-svelte/icons/bell";
   import ChevronsUpDown from "lucide-svelte/icons/chevrons-up-down";
-  import CreditCard from "lucide-svelte/icons/credit-card";
   import LogOut from "lucide-svelte/icons/log-out";
-  import Sparkles from "lucide-svelte/icons/sparkles";
 
   import * as Avatar from "$lib/components/ui/avatar/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { useSidebar } from "$lib/components/ui/sidebar/index.js";
+  import { Settings, UserPlus } from "lucide-svelte";
 
   let {
     user,
@@ -67,19 +65,12 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Group>
           <DropdownMenu.Item>
-            <Sparkles />
-            Upgrade to Pro
-          </DropdownMenu.Item>
-        </DropdownMenu.Group>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Group>
-          <DropdownMenu.Item>
-            <BadgeCheck />
-            Account
+            <UserPlus />
+            Add Account
           </DropdownMenu.Item>
           <DropdownMenu.Item>
-            <CreditCard />
-            Billing
+            <Settings />
+            Settings
           </DropdownMenu.Item>
           <DropdownMenu.Item>
             <Bell />
