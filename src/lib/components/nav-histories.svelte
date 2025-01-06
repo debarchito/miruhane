@@ -8,10 +8,11 @@
   import { Edit, Archive, Clock } from "lucide-svelte";
 
   let {
-    projects,
+    histories,
   }: {
-    projects: {
+    histories: {
       name: string;
+      description: string;
       url: string;
       // This should be `Component` after lucide-svelte updates types
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,8 +21,8 @@
 
   const sidebar = useSidebar();
 
-  function deleteProject(item: { name: string; url: string }) {
-    projects = projects.filter((project) => project.url !== item.url);
+  function deleteHistory(item: { name: string; url: string }) {
+    histories = histories.filter((history) => history.url !== item.url);
   }
 </script>
 
@@ -31,7 +32,7 @@
     <span class="ml-2 text-lg font-medium"> History </span>
   </Sidebar.GroupLabel>
   <Sidebar.Menu class="space-y-0.75 pt-1">
-    {#each projects as item (item.name)}
+    {#each histories as item (item.name)}
       <Sidebar.MenuItem class="rounded-lg hover:bg-white/10">
         <Sidebar.MenuButton>
           {#snippet child({ props })}
@@ -66,7 +67,7 @@
               <Archive class="text-muted-foreground" />
               <span>Archive</span>
             </DropdownMenu.Item>
-            <DropdownMenu.Item onclick={() => deleteProject(item)}>
+            <DropdownMenu.Item onclick={() => deleteHistory(item)}>
               <Trash2 class="text-red-500" />
               <span class="text-red-500">Delete</span>
             </DropdownMenu.Item>
