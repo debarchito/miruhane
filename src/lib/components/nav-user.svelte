@@ -10,6 +10,7 @@
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { useSidebar } from "$lib/components/ui/sidebar/index.js";
+  import { Settings, UserPlus } from "lucide-svelte";
 
   let {
     user,
@@ -67,19 +68,12 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Group>
           <DropdownMenu.Item>
-            <Sparkles />
-            Upgrade to Pro
-          </DropdownMenu.Item>
-        </DropdownMenu.Group>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Group>
-          <DropdownMenu.Item>
-            <BadgeCheck />
-            Account
+            <UserPlus />
+            Add Account
           </DropdownMenu.Item>
           <DropdownMenu.Item>
-            <CreditCard />
-            Billing
+            <Settings />
+            Settings
           </DropdownMenu.Item>
           <DropdownMenu.Item>
             <Bell />
