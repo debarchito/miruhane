@@ -12,4 +12,9 @@
     svelte-language-server
   ];
   enterShell = "pnpm db:up";
+  git-hooks.hooks.format = {
+    enable = true;
+    name = "Format";
+    entry = "pnpm format";
+  };
 }
