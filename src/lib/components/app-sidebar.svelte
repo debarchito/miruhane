@@ -111,21 +111,25 @@
         icon: Send,
       },
     ],
-    projects: [
+    histories: [
       {
-        name: "History 1 : Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+        name: "History 1",
+        description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
         url: "#1",
       },
       {
-        name: "History 2 : Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+        name: "History 2",
+        description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
         url: "#2",
       },
       {
-        name: "History 3 : Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+        name: "History 3",
+        description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
         url: "#3",
       },
       {
-        name: "History 4 : Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+        name: "History 4",
+        description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
         url: "#4",
       },
 
@@ -136,7 +140,7 @@
 
 <script lang="ts">
   import NavMain from "$lib/components/nav-main.svelte";
-  import NavProjects from "$lib/components/nav-projects.svelte";
+  import NavHistories from "$lib/components/nav-histories.svelte";
   import NavSecondary from "$lib/components/nav-secondary.svelte";
   import NavUser from "$lib/components/nav-user.svelte";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
@@ -170,7 +174,7 @@
   </Sidebar.Header>
   <Sidebar.Content>
     <NavMain items={data.navMain} />
-    <NavProjects projects={data.projects} />
+    <NavHistories histories={data.histories} />
     <NavSecondary items={data.navSecondary} class="mt-auto" />
   </Sidebar.Content>
   <Sidebar.Footer>
