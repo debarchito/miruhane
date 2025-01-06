@@ -1,13 +1,11 @@
 <script lang="ts" module>
   import BookOpen from "lucide-svelte/icons/book-open";
   import Bot from "lucide-svelte/icons/bot";
-  import ChartPie from "lucide-svelte/icons/chart-pie";
-  import Frame from "lucide-svelte/icons/frame";
   import LifeBuoy from "lucide-svelte/icons/life-buoy";
-  import Map from "lucide-svelte/icons/map";
   import Send from "lucide-svelte/icons/send";
   import Settings2 from "lucide-svelte/icons/settings-2";
   import SquareTerminal from "lucide-svelte/icons/square-terminal";
+  import { Square } from "lucide-svelte";
 
   const data = {
     user: {
@@ -116,20 +114,24 @@
     ],
     projects: [
       {
-        name: "Design Engineering",
+        name: "History 1 : Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
         url: "#",
-        icon: Frame,
       },
       {
-        name: "Sales & Marketing",
+        name: "History 2 : Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
         url: "#",
-        icon: ChartPie,
       },
       {
-        name: "Travel",
+        name: "History 3 : Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
         url: "#",
-        icon: Map,
       },
+      {
+        name: "History 4 : Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+        url: "#",
+      },
+
+      // For more than 4 history items, show the "More" button.
+      
     ],
   };
 </script>

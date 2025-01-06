@@ -3,9 +3,9 @@
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { useSidebar } from "$lib/components/ui/sidebar/index.js";
   import Ellipsis from "lucide-svelte/icons/ellipsis";
-  import Folder from "lucide-svelte/icons/folder";
   import Share from "lucide-svelte/icons/share";
   import Trash2 from "lucide-svelte/icons/trash-2";
+  import { Edit, Archive, Clock } from "lucide-svelte";
 
   let {
     projects,
@@ -15,7 +15,6 @@
       url: string;
       // This should be `Component` after lucide-svelte updates types
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      icon: any;
     }[];
   } = $props();
 
@@ -23,14 +22,16 @@
 </script>
 
 <Sidebar.Group class="group-data-[collapsible=icon]:hidden">
-  <Sidebar.GroupLabel>Projects</Sidebar.GroupLabel>
-  <Sidebar.Menu>
+  <Sidebar.GroupLabel>
+    <Clock class="h-6 w-6" />
+    <span class="ml-2 text-lg font-medium"> History </span>
+  </Sidebar.GroupLabel>
+  <Sidebar.Menu class="space-y-0.75 pt-1">
     {#each projects as item (item.name)}
-      <Sidebar.MenuItem>
+      <Sidebar.MenuItem class="rounded-lg hover:bg-white/10">
         <Sidebar.MenuButton>
           {#snippet child({ props })}
             <a href={item.url} {...props}>
-              <item.icon />
               <span>{item.name}</span>
             </a>
           {/snippet}
@@ -45,22 +46,25 @@
             {/snippet}
           </DropdownMenu.Trigger>
           <DropdownMenu.Content
-            class="w-48"
+            class="w-40 space-y-2 p-2"
             side={sidebar.isMobile ? "bottom" : "right"}
             align={sidebar.isMobile ? "end" : "start"}
           >
             <DropdownMenu.Item>
-              <Folder class="text-muted-foreground" />
-              <span>View Project</span>
-            </DropdownMenu.Item>
-            <DropdownMenu.Item>
               <Share class="text-muted-foreground" />
-              <span>Share Project</span>
+              <span>Share</span>
             </DropdownMenu.Item>
-            <DropdownMenu.Separator />
             <DropdownMenu.Item>
-              <Trash2 class="text-muted-foreground" />
-              <span>Delete Project</span>
+              <Edit class="text-muted-foreground" />
+              <span>Rename</span>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item>
+              <Archive class="text-muted-foreground" />
+              <span>Archive</span>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item>
+              <Trash2 class="text-red-500" />
+              <span class="text-red-500">Delete</span>
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
