@@ -80,7 +80,7 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item>
           <LogOut />
-          Log out
+          <a href="/sign-out">Sign Out</a>
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>

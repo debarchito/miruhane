@@ -4,8 +4,8 @@ import * as auth from "$lib/server/auth";
 import { verify } from "@node-rs/argon2";
 import { redirect } from "@sveltejs/kit";
 import { zod } from "sveltekit-superforms/adapters";
+import type { PageServerLoad, Actions } from "./$types";
 import { superValidate, message } from "sveltekit-superforms/server";
-import type { PageServerLoad, Actions } from "../demo/lucia/login/$types";
 
 const formSchema = z.object({
   // RFC 5321, SMTP Protocol, limits the email address to 254 characters
