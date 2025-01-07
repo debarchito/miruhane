@@ -16,13 +16,32 @@
       url: string;
       // This should be `Component` after lucide-svelte updates types
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      isEditing?: boolean; // Added flag for editing state
     }[];
   } = $props();
+
+  // Initialize isEditing for each history item
+  histories = histories.map((history) => ({
+    ...history,
+    isEditing: false, // Add isEditing property to each item
+  }));
 
   const sidebar = useSidebar();
 
   function deleteHistory(item: { name: string; url: string }) {
     histories = histories.filter((history) => history.url !== item.url);
+  }
+
+  function startEditing(item: { name: string; url: string }) {
+    histories = histories.map((history) =>
+      history.url === item.url ? { ...history, isEditing: true } : history,
+    );
+  }
+
+  function stopEditing(item: { name: string; url: string }) {
+    histories = histories.map((history) =>
+      history.url === item.url ? { ...history, isEditing: false } : history,
+    );
   }
 </script>
 
@@ -35,11 +54,19 @@
     {#each histories as item (item.name)}
       <Sidebar.MenuItem class="rounded-lg hover:bg-white/10">
         <Sidebar.MenuButton>
-          {#snippet child({ props })}
-            <a href={item.url} {...props}>
+          {#if item.isEditing}
+            <input
+              type="text"
+              class="w-full border-b border-white bg-transparent p-1 text-white outline-none"
+              bind:value={item.name}
+              onblur={() => stopEditing(item)}
+              onkeydown={(e) => e.key === "Enter" && stopEditing(item)}
+            />
+          {:else}
+            <a href={item.url}>
               <span>{item.name}</span>
             </a>
-          {/snippet}
+          {/if}
         </Sidebar.MenuButton>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
@@ -59,7 +86,7 @@
               <Share class="text-muted-foreground" />
               <span>Share</span>
             </DropdownMenu.Item>
-            <DropdownMenu.Item>
+            <DropdownMenu.Item onclick={() => startEditing(item)}>
               <Edit class="text-muted-foreground" />
               <span>Rename</span>
             </DropdownMenu.Item>
