@@ -48,18 +48,24 @@
       <div class="hidden sm:flex sm:items-center sm:space-x-8">
         <a href="#features" class="transition hover:text-gray-400">Features</a>
         <a href="#pricing" class="transition hover:text-gray-400">Pricing</a>
-        <button class="rounded-lg bg-white px-6 py-2 text-black transition hover:bg-gray-200">
+        <a
+          href="/sign-up"
+          class="rounded-lg bg-white px-6 py-2 text-black transition hover:bg-gray-200"
+        >
           Get Started
-        </button>
+        </a>
       </div>
     </div>
     {#if isMenuOpen}
       <div class="mt-4 flex flex-col space-y-4 sm:hidden">
         <a href="#features" class="transition hover:text-gray-400">Features</a>
         <a href="#pricing" class="transition hover:text-gray-400">Pricing</a>
-        <button class="rounded-lg bg-white px-6 py-2 text-black transition hover:bg-gray-200">
+        <a
+          href="/sign-up"
+          class="rounded-lg bg-white px-6 py-2 text-black transition hover:bg-gray-200"
+        >
           Get Started
-        </button>
+        </a>
       </div>
     {/if}
   </nav>
@@ -89,9 +95,9 @@
           class:opacity-100={isIntersecting}
           class:translate-y-0={isIntersecting}
         >
-          <button
+          <a href="/sign-up"
             class="flex items-center justify-center gap-2 rounded-lg bg-white px-8 py-3 text-lg text-black transition hover:bg-gray-200"
-            ><Play class="h-5 w-5" /> Try For Free</button
+            ><Play class="h-5 w-5" /> Try For Free</a
           >
           <button
             class="flex items-center justify-center gap-2 rounded-lg border border-gray-600 px-8 py-3 text-lg transition hover:bg-white/5"
