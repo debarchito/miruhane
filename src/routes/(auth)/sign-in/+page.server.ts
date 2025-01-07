@@ -15,7 +15,7 @@ const formSchema = z.object({
 
 export const load: PageServerLoad = async ({ locals }) => {
   if (locals.user) {
-    return redirect(302, "/dashboard");
+    return redirect(302, "/chat");
   }
   const form = await superValidate(zod(formSchema));
   return { form };
@@ -51,7 +51,7 @@ export const actions: Actions = {
       const session = await auth.createSession(token, user.id);
       auth.setSessionTokenCookie(event, token, session.expiresAt);
 
-      return redirect(302, "/dashboard");
+      return redirect(302, "/chat");
     } catch (err) {
       console.error(err);
       // TODO: Monitoring and logging integration
