@@ -8,8 +8,7 @@ export const user = pgTable(
     username: varchar("username", { length: 32 }).notNull(),
     // RFC 5321, SMTP Protocol, limits the email address to 254 characters
     email: varchar("email", { length: 254 }).notNull(),
-    // default output length is 32 + 1/3 of 32 = 43
-    passwordHash: varchar("password_hash", { length: 43 }).notNull(),
+    passwordHash: varchar("password_hash", { length: 98 }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
   },
   (table) => ({

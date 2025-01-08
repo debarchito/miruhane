@@ -46,7 +46,7 @@ export const actions: Actions = {
       return fail(400, { message: "Incorrect username or password" });
     }
 
-    const sessionToken = auth.generateSessionToken();
+    const sessionToken = auth.generateToken();
     const session = await auth.createSession(sessionToken, existingUser.id);
     auth.setSessionTokenCookie(event, sessionToken, session.expiresAt);
 
@@ -76,7 +76,7 @@ export const actions: Actions = {
     try {
       await db.insert(table.user).values({ id: userId, username, passwordHash });
 
-      const sessionToken = auth.generateSessionToken();
+      const sessionToken = auth.generateToken();
       const session = await auth.createSession(sessionToken, userId);
       auth.setSessionTokenCookie(event, sessionToken, session.expiresAt);
     } catch (e) {

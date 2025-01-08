@@ -3,24 +3,26 @@ import { db } from "$lib/server/db";
 import { sha256 } from "@oslojs/crypto/sha2";
 import * as table from "$lib/server/db/schema";
 import type { RequestEvent } from "@sveltejs/kit";
-import { encodeBase64url, encodeHexLowerCase } from "@oslojs/encoding";
+import { encodeBase32LowerCase, encodeHexLowerCase } from "@oslojs/encoding";
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 export const sessionCookieName = "auth-session";
 
-export function generateSessionToken() {
-  const bytes = crypto.getRandomValues(new Uint8Array(18));
-  const token = encodeBase64url(bytes);
-  return token;
+export function generateToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(20));
+  const id = encodeBase32LowerCase(bytes);
+  return id;
 }
 
 export async function createSession(token: string, userId: string) {
-  const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+  const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token))).slice(0, 32);
+  const now = Date.now();
   const session: table.Session = {
     id: sessionId,
     userId,
-    expiresAt: new Date(Date.now() + DAY_IN_MS * 30),
+    createdAt: new Date(now),
+    expiresAt: new Date(now + DAY_IN_MS * 30),
   };
   await db.insert(table.session).values(session);
   return session;

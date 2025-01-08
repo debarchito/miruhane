@@ -1,18 +1,18 @@
 <script lang="ts">
-  import { type PageData } from "./$types";
-  import { superForm } from "sveltekit-superforms/client";
+  import { enhance } from "$app/forms";
+  import { type ActionData } from "./$types";
   import * as Card from "$lib/components/ui/card/index.js";
   import Google from "$lib/components/icons/Google.svelte";
   import GitHub from "$lib/components/icons/GitHub.svelte";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
   import { Separator } from "$lib/components/ui/separator/index.js";
   import { LogIn, TriangleAlert, Eye, EyeClosed } from "lucide-svelte";
+  import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
+  import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
 
-  let { data }: { data: PageData } = $props();
-  let { form, constraints, errors, enhance, message } = superForm(data.form);
+  let { form }: { form: ActionData } = $props();
   let showPassword = $state(false);
 </script>
 
@@ -23,17 +23,10 @@
   </Card.Header>
   <Card.Content>
     <div class="grid gap-4">
-      <form class="grid gap-4" method="POST" use:enhance>
+      <form class="grid gap-4" method="POST" action="?/sign-in" use:enhance>
         <div class="grid gap-2">
           <Label for="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="abc@example.com"
-            aria-invalid={$errors.email ? "true" : undefined}
-            bind:value={$form.email}
-            {...$constraints.email}
-          />
+          <Input id="email" type="email" name="email" placeholder="contact@janedoe.com" required />
         </div>
         <div class="grid gap-2">
           <div class="flex items-center">
@@ -44,12 +37,12 @@
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="~!@#$%^&"
-              aria-invalid={$errors.password ? "true" : undefined}
-              bind:value={$form.password}
-              {...$constraints.password}
+              name="password"
+              placeholder="~!@#$%^"
+              required
             />
             <button
+              type="button"
               class="absolute right-2 top-1/2 -translate-y-1/2"
               onclick={() => (showPassword = !showPassword)}
             >
@@ -66,22 +59,48 @@
           Sign In
         </Button>
       </form>
-      {#if $message}
-        <Alert.Root variant="destructive" class="border-red-500">
-          <Alert.Description class="font-medium text-red-600">
+      {#if form?.message}
+        <Alert.Root class="border-red-600 dark:border-red-400">
+          <Alert.Description class="font-medium text-red-600 dark:text-red-400">
             <TriangleAlert class="mr-2 inline-block h-5 w-5" />
-            {$message}
+            {form?.message}
           </Alert.Description>
         </Alert.Root>
       {/if}
       <Separator class="mx-auto max-w-10" />
       <div class="grid grid-cols-2 gap-4">
-        <Button variant="outline" class="w-full">
-          <Google />
-        </Button>
-        <Button variant="outline" class="w-full">
-          <GitHub />
-        </Button>
+        <AlertDialog.Root>
+          <AlertDialog.Trigger class="w-full {buttonVariants({ variant: 'outline' })}">
+            <GitHub />
+          </AlertDialog.Trigger>
+          <AlertDialog.Content class="w-4/5">
+            <AlertDialog.Header>
+              <AlertDialog.Title>WIP!</AlertDialog.Title>
+              <AlertDialog.Description>
+                Social sign-in is yet to be implemented! This button is a placeholder for now.
+              </AlertDialog.Description>
+            </AlertDialog.Header>
+            <AlertDialog.Footer>
+              <AlertDialog.Cancel>Got it!</AlertDialog.Cancel>
+            </AlertDialog.Footer>
+          </AlertDialog.Content>
+        </AlertDialog.Root>
+        <AlertDialog.Root>
+          <AlertDialog.Trigger class="w-full {buttonVariants({ variant: 'outline' })}">
+            <Google />
+          </AlertDialog.Trigger>
+          <AlertDialog.Content class="w-4/5">
+            <AlertDialog.Header>
+              <AlertDialog.Title>WIP!</AlertDialog.Title>
+              <AlertDialog.Description>
+                Social sign-in is yet to be implemented! This button is a placeholder for now.
+              </AlertDialog.Description>
+            </AlertDialog.Header>
+            <AlertDialog.Footer>
+              <AlertDialog.Cancel>Got it!</AlertDialog.Cancel>
+            </AlertDialog.Footer>
+          </AlertDialog.Content>
+        </AlertDialog.Root>
       </div>
     </div>
     <div class="mt-4 text-center text-sm">
