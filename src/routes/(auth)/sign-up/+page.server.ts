@@ -68,12 +68,12 @@ export const actions: Actions = {
       const token = auth.generateToken();
       const session = await auth.createSession(token, userId);
       auth.setSessionTokenCookie(event, token, session.expiresAt);
-
-      return redirect(302, "/chat");
     } catch (err) {
       console.error(err);
       // TODO: Monitoring and logging integration
       return fail(500, { message: "Oops...Something went wrong!" });
     }
+
+    return redirect(302, "/chat");
   },
 };

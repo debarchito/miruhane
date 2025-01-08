@@ -4,7 +4,7 @@ import type { RequestHandler } from "./$types";
 
 export const GET: RequestHandler = async (event) => {
   if (!event.locals.session) {
-    return redirect(302, "/login");
+    return redirect(302, "/sign-in");
   }
 
   await auth.invalidateSession(event.locals.session!.id);
@@ -12,5 +12,5 @@ export const GET: RequestHandler = async (event) => {
   event.locals.user = null;
   event.locals.session = null;
 
-  return redirect(302, "/login");
+  return redirect(302, "/sign-in");
 };
