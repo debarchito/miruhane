@@ -32,7 +32,7 @@ export const actions: Actions = {
       return fail(400, { message: "Invalid email format" });
     }
 
-    if (!isValidPassword(password) && !isValidPassword(confirmPassword)) {
+    if (!isValidPassword(password) || !isValidPassword(confirmPassword)) {
       return fail(400, { message: "Password must be 8-32 characters" });
     }
 
