@@ -3,7 +3,7 @@ import { db } from "$lib/server/db";
 import { sha256 } from "@oslojs/crypto/sha2";
 import * as table from "$lib/server/db/schema";
 import type { RequestEvent } from "@sveltejs/kit";
-import { encodeBase32LowerCase, encodeHexLowerCase } from "@oslojs/encoding";
+import { encodeBase64url, encodeHexLowerCase } from "@oslojs/encoding";
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
@@ -11,12 +11,12 @@ export const sessionCookieName = "auth-session";
 
 export function generateToken() {
   const bytes = crypto.getRandomValues(new Uint8Array(20));
-  const id = encodeBase32LowerCase(bytes);
+  const id = encodeBase64url(bytes);
   return id;
 }
 
 export async function createSession(token: string, userId: string) {
-  const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token))).slice(0, 32);
+  const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
   const now = Date.now();
   const session: table.Session = {
     id: sessionId,
@@ -29,7 +29,7 @@ export async function createSession(token: string, userId: string) {
 }
 
 export async function validateSessionToken(token: string) {
-  const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token))).slice(0, 32);
+  const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
   const [result] = await db
     .select({
       // Adjust user table here to tweak returned data

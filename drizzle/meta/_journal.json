@@ -15,6 +15,13 @@
       "when": 1736341142070,
       "tag": "0001_rich_shriek",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1736346045149,
+      "tag": "0002_aromatic_sir_ram",
+      "breakpoints": true
     }
   ]
 }
