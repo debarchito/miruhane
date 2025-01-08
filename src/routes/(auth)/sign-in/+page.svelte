@@ -16,6 +16,10 @@
   let showPassword = $state(false);
 </script>
 
+<svelte:head>
+  <title>Sign In | miruhane.</title>
+</svelte:head>
+
 <Card.Root class="mx-auto max-w-sm">
   <Card.Header>
     <Card.Title class="text-2xl">Sign In</Card.Title>

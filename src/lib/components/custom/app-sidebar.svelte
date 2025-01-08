@@ -1,26 +1,27 @@
-<script lang="ts" module>
-  import BookOpen from "lucide-svelte/icons/book-open";
-  import Bot from "lucide-svelte/icons/bot";
-  import LifeBuoy from "lucide-svelte/icons/life-buoy";
-  import Send from "lucide-svelte/icons/send";
-  import Settings2 from "lucide-svelte/icons/settings-2";
-  import SquareTerminal from "lucide-svelte/icons/square-terminal";
+<script lang="ts">
+  import NavMain from "$lib/components/custom/nav-main.svelte";
+  import NavUser from "$lib/components/custom/nav-user.svelte";
+  import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+  import NavProjects from "$lib/components/custom/nav-projects.svelte";
+  import { BookOpen, Bot, ChartPie, Frame, Map, Settings2, Sparkles, History } from "lucide-svelte";
+
+  let { ref = $bindable(null), ...restProps } = $props();
 
   const data = {
     user: {
-      name: "shadcn",
-      email: "m@example.com",
-      avatar: "/avatars/shadcn.jpg",
+      name: restProps.username,
+      email: restProps.email,
+      avatar: "",
     },
     navMain: [
       {
-        title: "Playground",
-        url: "#",
-        icon: SquareTerminal,
+        title: "History",
+        url: "/history",
+        icon: History,
         isActive: true,
         items: [
           {
-            title: "History",
+            title: "How far does it go? Does it go over the top?",
             url: "#",
           },
           {
@@ -30,6 +31,10 @@
           {
             title: "Settings",
             url: "#",
+          },
+          {
+            title: "... more",
+            url: "/history",
           },
         ],
       },
@@ -99,55 +104,24 @@
         ],
       },
     ],
-    navSecondary: [
+    projects: [
       {
-        title: "Support",
+        name: "Design Engineering",
         url: "#",
-        icon: LifeBuoy,
+        icon: Frame,
       },
       {
-        title: "Feedback",
+        name: "Sales & Marketing",
         url: "#",
-        icon: Send,
-      },
-    ],
-    histories: [
-      {
-        name: "History 1",
-        description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-        url: "#1",
+        icon: ChartPie,
       },
       {
-        name: "History 2",
-        description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-        url: "#2",
+        name: "Travel",
+        url: "#",
+        icon: Map,
       },
-      {
-        name: "History 3",
-        description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-        url: "#3",
-      },
-      {
-        name: "History 4",
-        description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-        url: "#4",
-      },
-
-      // For more than 4 history items, show the "More" button.
     ],
   };
-</script>
-
-<script lang="ts">
-  import NavMain from "$lib/components/nav-main.svelte";
-  import NavHistories from "$lib/components/nav-histories.svelte";
-  import NavSecondary from "$lib/components/nav-secondary.svelte";
-  import NavUser from "$lib/components/nav-user.svelte";
-  import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-  import Command from "lucide-svelte/icons/command";
-  import type { ComponentProps } from "svelte";
-
-  let { ref = $bindable(null), ...restProps }: ComponentProps<typeof Sidebar.Root> = $props();
 </script>
 
 <Sidebar.Root bind:ref variant="inset" {...restProps}>
@@ -160,11 +134,11 @@
               <div
                 class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
               >
-                <Command class="size-4" />
+                <Sparkles class="size-4" />
               </div>
               <div class="grid flex-1 text-left text-sm leading-tight">
-                <span class="truncate font-semibold">Acme Inc</span>
-                <span class="truncate text-xs">Enterprise</span>
+                <span class="truncate font-semibold">miruhane.</span>
+                <span class="truncate text-xs">@aurialis</span>
               </div>
             </a>
           {/snippet}
@@ -174,8 +148,7 @@
   </Sidebar.Header>
   <Sidebar.Content>
     <NavMain items={data.navMain} />
-    <NavHistories histories={data.histories} />
-    <NavSecondary items={data.navSecondary} class="mt-auto" />
+    <NavProjects projects={data.projects} />
   </Sidebar.Content>
   <Sidebar.Footer>
     <NavUser user={data.user} />

@@ -25,7 +25,7 @@ export const actions: Actions = {
     // NOTE: NEVER trust the client to send the correct data; always validate
 
     if (!isValidUsername(username as string)) {
-      return fail(400, { message: "Usernames can only contain: a-z, A-Z, 0-9, _ and -" });
+      return fail(400, { message: "Usernames can only contain: a-z, 0-9, _ and -" });
     }
 
     if (!isEmail(email as string)) {

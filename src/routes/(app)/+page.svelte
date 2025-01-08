@@ -1,17 +1,5 @@
 <script lang="ts">
-  import {
-    Menu,
-    X,
-    Brain,
-    Play,
-    Cpu,
-    Mic,
-    Globe,
-    Clock,
-    Search,
-    Shield,
-    Cloud,
-  } from "lucide-svelte";
+  import { Menu, X, Brain, Play, Mic, Clock, Search, Shield } from "lucide-svelte";
 
   let isIntersecting = $state(false);
   let isMenuOpen = $state(false);
@@ -33,6 +21,10 @@
     isMenuOpen = !isMenuOpen;
   }
 </script>
+
+<svelte:head>
+  <title>miruhane.</title>
+</svelte:head>
 
 <main class="min-h-screen bg-black text-white">
   <nav class="container mx-auto px-4 py-6">

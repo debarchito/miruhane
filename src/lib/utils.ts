@@ -10,7 +10,7 @@ export function isValidUsername(email: unknown): email is string {
     typeof email === "string" &&
     email.length >= 3 &&
     email.length <= 32 &&
-    /^[a-zA-Z0-9_-]+$/.test(email)
+    /^[a-z0-9_-]+$/.test(email)
   );
 }
 
