@@ -1,8 +1,156 @@
 <script lang="ts">
-  import AppSidebar from "$lib/components/app-sidebar.svelte";
-  import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
-  import { Separator } from "$lib/components/ui/separator/index.js";
-  import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+  import { onMount } from 'svelte';
+  import { writable, get } from 'svelte/store';
+  import AppSidebar from '$lib/components/app-sidebar.svelte';
+  import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
+  import { Separator } from '$lib/components/ui/separator/index.js';
+  import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+  import { Mic, MicOff, Send } from 'lucide-svelte';
+
+  const isSpeaking = writable<boolean>(false);
+  const isRecording = writable<boolean>(false);
+  const showSubtitles = writable<boolean>(false);
+  const scale = writable<number>(1);
+  const textToSpeak = writable<string>('Awaiting your input...');
+  const recordedText = writable<string>('');
+  const accumulatedText = writable<string>('');
+  const isLoading = writable<boolean>(false);
+  const userInput = writable<string>('');
+
+  let speechRecognition: Window['SpeechRecognition'] | null = null;
+  let shouldContinueRecording = false;
+
+  const startRecording = (): void => {
+    accumulatedText.set('');
+    recordedText.set('');
+    userInput.set('');
+
+    if (speechRecognition && !get(isRecording)) {
+      console.log('Starting recording...');
+      isRecording.set(true);
+      shouldContinueRecording = true;
+      speechRecognition.start();
+    }
+  };
+
+  const stopRecording = (): void => {
+    if (speechRecognition && get(isRecording)) {
+      console.log('Stopping recording...');
+      isRecording.set(false);
+      shouldContinueRecording = false;
+      speechRecognition.stop();
+
+      const finalQuery = get(accumulatedText);
+      console.log('Final query being sent to Gemini:', finalQuery);
+      userInput.set(finalQuery);
+
+      if (finalQuery) {
+        onComplete();
+      } else {
+        console.log('No recorded text to process.');
+      }
+    }
+  };
+
+  onMount(() => {
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      speechRecognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      speechRecognition.lang = 'en-US';
+      speechRecognition.interimResults = true;
+
+      speechRecognition.onresult = (event: SpeechRecognitionEvent) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        recordedText.set(transcript);
+
+        if (event.results[event.resultIndex].isFinal) {
+          const currentText = get(accumulatedText);
+          accumulatedText.set(currentText + ' ' + transcript.trim());
+          console.log('Final recognized speech:', transcript);
+        } else {
+          console.log('Interim result:', transcript);
+        }
+      };
+
+      speechRecognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        console.error('SpeechRecognition error:', event.error);
+        stopRecording();
+      };
+
+      speechRecognition.onend = () => {
+        console.log('SpeechRecognition ended.');
+        if (shouldContinueRecording) {
+          console.log('Restarting recording...');
+          speechRecognition?.start();
+        }
+      };
+
+      console.log('SpeechRecognition initialized.');
+    } else {
+      console.error('SpeechRecognition is not supported in this browser.');
+      textToSpeak.set('Your browser does not support SpeechRecognition.');
+    }
+  });
+
+  const onComplete = async (): Promise<void> => {
+    const query = get(userInput).trim();
+    if (query) {
+      const answer = await getGeminiAnswer(query);
+      textToSpeak.set(answer);
+      if (get(showSubtitles)) {
+        speak(answer);
+      }
+    }
+  };
+
+  const getGeminiAnswer = async (query: string): Promise<string> => {
+    const apiKey = 'AIzaSyCsef6OXX1QQpbFaU80SbA7S-_ZFNj96gk'; 
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const requestBody = { contents: [{ parts: [{ text: query }] }] };
+
+    try {
+      isLoading.set(true);
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data: { contents: { parts: { text: string }[] }[] } = await response.json();
+      isLoading.set(false);
+      return data.contents?.[0]?.parts?.[0]?.text || 'Sorry, I couldn\'t process that.';
+    } catch (error) {
+      console.error('Error fetching from Gemini API:', error);
+      isLoading.set(false);
+      return 'There was an error processing your request. Please try again.';
+    }
+  };
+
+  const speak = (text: string): void => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onstart = () => {
+      console.log('Speaking...');
+      isSpeaking.set(true);
+      scale.set(1.2);
+    };
+    utterance.onend = () => {
+      console.log('Speech ended.');
+      isSpeaking.set(false);
+      scale.set(1);
+    };
+    speechSynthesis.speak(utterance);
+  };
+
+  const handleSubmit = (): void => {
+    const inputText = get(userInput).trim();
+    if (inputText) {
+      console.log('Sending user input to Gemini:', inputText);
+      userInput.set('');
+      onComplete();
+    }
+  };
 </script>
 
 <Sidebar.Provider>
@@ -15,23 +163,121 @@
         <Breadcrumb.Root>
           <Breadcrumb.List>
             <Breadcrumb.Item class="hidden md:block">
-              <Breadcrumb.Link href="#">Building Your Application</Breadcrumb.Link>
+              <Breadcrumb.Link href="#">AI Interface</Breadcrumb.Link>
             </Breadcrumb.Item>
             <Breadcrumb.Separator class="hidden md:block" />
             <Breadcrumb.Item>
-              <Breadcrumb.Page>Data Fetching</Breadcrumb.Page>
+              <Breadcrumb.Page>Visualizer</Breadcrumb.Page>
             </Breadcrumb.Item>
           </Breadcrumb.List>
         </Breadcrumb.Root>
       </div>
     </header>
-    <div class="flex flex-1 flex-col gap-4 p-4 pt-0">
-      <div class="grid auto-rows-min gap-4 md:grid-cols-3">
-        <div class="aspect-video rounded-xl bg-muted/50"></div>
-        <div class="aspect-video rounded-xl bg-muted/50"></div>
-        <div class="aspect-video rounded-xl bg-muted/50"></div>
+    <div class="page-wrapper">
+      <div class="visualizer" aria-hidden="true" style="transform: scale({$scale});">
+        <div class="center-circle"></div>
       </div>
-      <div class="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min"></div>
+
+      <div class="input-container">
+        <button
+          onclick={$isRecording ? stopRecording : startRecording}
+          class="rounded-full p-2 text-white shadow-md hover:bg-opacity-90"
+          style="background-color: {$isRecording ? 'red' : '#4f46e5'};"
+        >
+          {#if $isRecording}
+            <MicOff />
+          {:else}
+            <Mic />
+          {/if}
+        </button>
+        <input
+          type="text"
+          class="flex-1 rounded-lg border-gray-300 px-4 py-2 shadow-md"
+          placeholder="Type your query..."
+          bind:value={$userInput}
+        />
+        <button
+          onclick={handleSubmit}
+          class="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white shadow-md hover:bg-green-700"
+        >
+          <Send /> Send
+        </button>
+      </div>
+
+      {#if $showSubtitles}
+        <div class="subtitles mt-4 text-lg text-white">
+          <p>{$isLoading ? "Loading..." : $textToSpeak}</p>
+        </div>
+      {/if}
     </div>
   </Sidebar.Inset>
 </Sidebar.Provider>
+
+<style>
+  .page-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 85vh;
+    padding: 20px;
+  }
+
+  .visualizer {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    background: radial-gradient(circle, #1f2937, #4c1d95);
+    box-shadow: 0 0 30px rgba(76, 29, 149, 0.8);
+    transition: transform 0.5s ease-in-out;
+    margin-bottom: 20px;
+  }
+
+  .center-circle {
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, #ffffff, #7c3aed);
+    border-radius: 50%;
+    animation: pulse 2s infinite ease-in-out;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+
+  .subtitles {
+    text-align: center;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .input-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: auto;
+    position: sticky;
+    bottom: 0;
+    z-index: 1000;
+  }
+
+  input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+  }
+
+  button {
+    cursor: pointer;
+  }
+</style>
