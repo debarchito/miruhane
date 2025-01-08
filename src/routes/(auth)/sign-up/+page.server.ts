@@ -5,7 +5,7 @@ import { db } from "$lib/server/db/index.js";
 import { redirect, fail } from "@sveltejs/kit";
 import * as table from "$lib/server/db/schema.js";
 import type { PageServerLoad, Actions } from "./$types";
-import { isValidPassword, isValidUsername } from "../utils.js";
+import { isValidPassword, isValidUsername } from "$lib/utils.js";
 
 export const load: PageServerLoad = async ({ locals }) => {
   if (locals.session) {

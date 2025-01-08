@@ -2,8 +2,8 @@ import { db } from "$lib/server/db";
 import * as auth from "$lib/server/auth";
 import { verify } from "@node-rs/argon2";
 import isEmail from "validator/lib/isEmail";
-import { isValidPassword } from "../utils.js";
 import { redirect, fail } from "@sveltejs/kit";
+import { isValidPassword } from "$lib/utils.js";
 import type { PageServerLoad, Actions } from "./$types";
 
 export const load: PageServerLoad = async ({ locals }) => {
