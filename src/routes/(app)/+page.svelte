@@ -95,7 +95,8 @@
           class:opacity-100={isIntersecting}
           class:translate-y-0={isIntersecting}
         >
-          <a href="/sign-up"
+          <a
+            href="/sign-up"
             class="flex items-center justify-center gap-2 rounded-lg bg-white px-8 py-3 text-lg text-black transition hover:bg-gray-200"
             ><Play class="h-5 w-5" /> Try For Free</a
           >

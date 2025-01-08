@@ -8,8 +8,10 @@
     pnpm.enable = true;
   };
   packages = with pkgs; [
-    typescript-language-server
     svelte-language-server
+    typescript-language-server
+    tailwindcss-language-server
+    vscode-langservers-extracted
   ];
   enterShell = "pnpm db:up";
   git-hooks.hooks.format = {
