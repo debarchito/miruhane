@@ -11,6 +11,7 @@
   let isStarted = $state(false);
   let isPaused = $state(false);
   let transcription = $state("");
+  let conversationResult = $state("");
   let isLoading = $state(false);
   let isNextStageRunning = $state(false);
   let mediaRecorder: MediaRecorder;
@@ -56,6 +57,7 @@
     isStarted = false;
     isPaused = false;
     transcription = "";
+    conversationResult = "";
     isLoading = false;
     isNextStageRunning = false;
     audioChunks = [];
@@ -98,24 +100,33 @@
 
       if (shouldProcess) {
         const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-        const formData = new FormData();
-        formData.append("audio", audioBlob);
+        const audioFD = new FormData();
+        const contextFD = new FormData();
+        audioFD.append("audio", audioBlob);
 
         isLoading = true;
         try {
-          const res = await fetch("/api/infer", {
+          const inferRes = await fetch("/api/infer", {
             method: "POST",
-            body: formData,
+            body: audioFD,
           });
-          const data = await res.json();
-          transcription = data.text;
+          const infered = await inferRes.json();
+          console.log(infered);
+          transcription = infered.text.text;
           transcriptionHistory = [
             ...transcriptionHistory,
             {
-              text: data.text,
+              text: infered.text.text,
               timestamp: new Date(),
             },
           ];
+          contextFD.append("context", infered.text.text);
+          const converseRes = await fetch("/api/converse", {
+            method: "POST",
+            body: contextFD,
+          });
+          const conversed = await converseRes.json();
+          conversationResult = conversed.text;
           isNextStageRunning = true;
         } catch (err) {
           console.error("Error sending audio:", err);
@@ -163,7 +174,7 @@
       >
         <div
           class="{isStarted
-            ? 'grid grid-cols-1 md:grid-cols-2'
+            ? 'grid grid-cols-1 gap-4 md:grid-cols-2'
             : ''} w-full transition-all duration-500"
         >
           <div class="flex flex-col items-center p-4">
@@ -267,7 +278,7 @@
 
           {#if isStarted}
             <div
-              class="flex flex-col p-4 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 md:p-8"
+              class="flex flex-col gap-4 p-4 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 md:p-8"
             >
               {#if showHistory && transcriptionHistory.length > 0}
                 <div
@@ -365,6 +376,46 @@
                   </div>
                 </Card.Content>
               </Card.Root>
+
+              {#if conversationResult}
+                <Card.Root
+                  class="relative overflow-hidden border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5 shadow-xl shadow-primary/10 backdrop-blur-md animate-in fade-in slide-in-from-bottom-4"
+                >
+                  <div
+                    class="absolute inset-0 rounded-lg bg-gradient-to-tr from-primary/10 via-transparent to-primary/10"
+                  ></div>
+                  <Card.Header class="relative z-10">
+                    <Card.Title
+                      class="mb-2 text-sm font-medium uppercase tracking-wide text-primary/90"
+                      >Response</Card.Title
+                    >
+                    <Card.Description>
+                      <div
+                        class="relative text-base font-light leading-relaxed text-white/90 transition-opacity md:text-lg"
+                      >
+                        <div class="flex flex-col gap-2">
+                          <span class="animate-in fade-in slide-in-from-bottom-2"
+                            >{conversationResult}</span
+                          >
+                        </div>
+                      </div>
+                    </Card.Description>
+                  </Card.Header>
+                  <Card.Content>
+                    <div class="absolute right-[0.5em] top-[0.5rem] h-20 w-20 opacity-20">
+                      <div
+                        class="absolute inset-0 animate-[spin_3s_linear_infinite] rounded-full border-4 border-primary"
+                      ></div>
+                      <div
+                        class="absolute inset-2 animate-[spin_2s_linear_infinite] rounded-full border-4 border-primary"
+                      ></div>
+                      <div
+                        class="absolute inset-4 animate-[spin_4s_linear_infinite] rounded-full border-4 border-primary"
+                      ></div>
+                    </div>
+                  </Card.Content>
+                </Card.Root>
+              {/if}
             </div>
           {/if}
         </div>

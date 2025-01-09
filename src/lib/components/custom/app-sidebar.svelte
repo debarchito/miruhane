@@ -1,11 +1,39 @@
 <script lang="ts">
   import NavMain from "$lib/components/custom/nav-main.svelte";
   import NavUser from "$lib/components/custom/nav-user.svelte";
+  import * as Select from "$lib/components/ui/select/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-  import NavProjects from "$lib/components/custom/nav-projects.svelte";
-  import { BookOpen, Bot, ChartPie, Frame, Map, Settings2, Sparkles, History } from "lucide-svelte";
+  import {
+    BookOpen,
+    Bot,
+    ChartPie,
+    Frame,
+    Map,
+    Settings2,
+    Sparkles,
+    History,
+    Speech,
+    PenLine,
+  } from "lucide-svelte";
 
   let { ref = $bindable(null), ...restProps } = $props();
+  const sttModels = [
+    { value: "stt-web", label: "Browser built-in" },
+    { value: "stt-wt", label: "Whisper Tiny" },
+    { value: "stt-ws", label: "Whisper Base" },
+  ];
+  const ttsModels = [
+    { value: "tts-wt", label: "Whisper Tiny" },
+    { value: "tts-ws", label: "Whisper Base" },
+  ];
+  let sttModel = $state("");
+  let ttsModel = $state("");
+  const sttTriggerContent = $derived(
+    sttModels.find((f) => f.value === sttModel)?.label ?? "Select",
+  );
+  const ttsTriggerContent = $derived(
+    sttModels.find((f) => f.value === ttsModel)?.label ?? "Select",
+  );
 
   const data = {
     user: {
@@ -148,7 +176,40 @@
   </Sidebar.Header>
   <Sidebar.Content>
     <NavMain items={data.navMain} />
-    <NavProjects projects={data.projects} />
+    <Sidebar.Group>
+      <Sidebar.GroupLabel><PenLine class="mr-2" /> STT Model</Sidebar.GroupLabel>
+      <Sidebar.Menu>
+        <Select.Root type="single" bind:value={sttModel}>
+          <Select.Trigger class="w-[180px]">
+            {sttTriggerContent}
+          </Select.Trigger>
+          <Select.Content>
+            <Select.Group>
+              {#each sttModels as model}
+                <Select.Item value={model.value} label={model.label}>{model.label}</Select.Item>
+              {/each}
+            </Select.Group>
+          </Select.Content>
+        </Select.Root>
+      </Sidebar.Menu>
+    </Sidebar.Group>
+    <Sidebar.Group>
+      <Sidebar.GroupLabel><Speech class="mr-2" /> TTS Model</Sidebar.GroupLabel>
+      <Sidebar.Menu>
+        <Select.Root type="single" bind:value={ttsModel}>
+          <Select.Trigger class="w-[180px]">
+            {ttsTriggerContent}
+          </Select.Trigger>
+          <Select.Content>
+            <Select.Group>
+              {#each ttsModels as model}
+                <Select.Item value={model.value} label={model.label}>{model.label}</Select.Item>
+              {/each}
+            </Select.Group>
+          </Select.Content>
+        </Select.Root>
+      </Sidebar.Menu>
+    </Sidebar.Group>
   </Sidebar.Content>
   <Sidebar.Footer>
     <NavUser user={data.user} />
