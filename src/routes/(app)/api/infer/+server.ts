@@ -13,7 +13,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     return new Response("No audio file", { status: 400 });
   }
 
-  const res = await fetch("https://api-inference.huggingface.co/models/openai/whisper-tiny", {
+  const res = await fetch("https://api-inference.huggingface.co/models/openai/whisper-base", {
     headers: {
       Authorization: `Bearer ${HUGGINGFACE_TOKEN}`,
       "Content-Type": "application/json",

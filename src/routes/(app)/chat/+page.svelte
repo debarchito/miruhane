@@ -1,15 +1,24 @@
 <script lang="ts">
-  import { X, Pause, MessageSquarePlus } from "lucide-svelte";
+  import { X, Play, Clock, Pause, Check, MessageSquarePlus } from "lucide-svelte";
+  import AppSidebar from "$lib/components/custom/app-sidebar.svelte";
+  import * as Card from "$lib/components/ui/card/index.js";
+  import * as Button from "$lib/components/ui/button/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { Separator } from "$lib/components/ui/separator/index.js";
-  import AppSidebar from "$lib/components/custom/app-sidebar.svelte";
   import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
 
   let { data } = $props();
   let isStarted = $state(false);
+  let isPaused = $state(false);
   let transcription = $state("");
   let isLoading = $state(false);
+  let isNextStageRunning = $state(false);
   let mediaRecorder: MediaRecorder;
+  let timer = $state(30);
+  let transcriptionHistory = $state<{ text: string; timestamp: Date }[]>([]);
+  let showHistory = $state(false);
+  // eslint-disable-next-line
+  let timerInterval: any;
   // eslint-disable-next-line
   let audioChunks: BlobPart[] = [];
 
@@ -23,8 +32,21 @@
         audioChunks.push(event.data);
       };
 
-      mediaRecorder.start(100); // Record in 100ms chunks
+      mediaRecorder.start(100);
       isStarted = true;
+      isPaused = false;
+      isNextStageRunning = false;
+
+      timer = 30;
+      timerInterval = setInterval(() => {
+        if (!isPaused) {
+          timer--;
+          if (timer <= 0) {
+            stopRecording(true);
+            timer = 30;
+          }
+        }
+      }, 1000);
     } catch (err) {
       console.error(err);
     }
@@ -32,23 +54,46 @@
 
   function resetState() {
     isStarted = false;
+    isPaused = false;
     transcription = "";
     isLoading = false;
+    isNextStageRunning = false;
     audioChunks = [];
+    clearInterval(timerInterval);
+    timer = 30;
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
       mediaRecorder.stop();
       mediaRecorder.stream.getTracks().forEach((track) => track.stop());
     }
   }
 
-  async function stopRecording(shouldProcess = true) {
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-      mediaRecorder.stop();
+  function pauseRecording() {
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      mediaRecorder.requestData();
+      mediaRecorder.pause();
+      isPaused = true;
+    } else if (mediaRecorder && mediaRecorder.state === "paused") {
+      mediaRecorder.resume();
+      isPaused = false;
+    }
+  }
 
+  async function stopRecording(shouldProcess = true) {
+    clearInterval(timerInterval);
+    timer = 30;
+
+    if (
+      mediaRecorder &&
+      (mediaRecorder.state === "recording" || mediaRecorder.state === "paused")
+    ) {
+      if (mediaRecorder.state === "recording") {
+        mediaRecorder.requestData();
+      }
+
+      mediaRecorder.stop();
       await new Promise((resolve) => {
         mediaRecorder.addEventListener("stop", resolve, { once: true });
       });
-
       mediaRecorder.stream.getTracks().forEach((track) => track.stop());
 
       if (shouldProcess) {
@@ -63,12 +108,21 @@
             body: formData,
           });
           const data = await res.json();
-          console.log(data);
           transcription = data.text;
+          transcriptionHistory = [
+            ...transcriptionHistory,
+            {
+              text: data.text,
+              timestamp: new Date(),
+            },
+          ];
+          isNextStageRunning = true;
         } catch (err) {
           console.error("Error sending audio:", err);
         } finally {
           isLoading = false;
+          audioChunks = [];
+          startRecording();
         }
       } else {
         resetState();
@@ -115,12 +169,12 @@
           <div class="flex flex-col items-center p-4">
             <div class="relative h-24 w-24 md:h-32 md:w-32">
               <div
-                class:animate-[pulse_1.2s_ease-in-out_infinite]={isStarted}
+                class:animate-[pulse_1.2s_ease-in-out_infinite]={isStarted && !isPaused}
                 class="absolute inset-0 rounded-full border-4 border-primary/80 shadow-xl shadow-primary/30 backdrop-blur-sm"
                 style="animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1);"
               ></div>
               <div
-                class:animate-[spin_2s_linear_infinite]={isStarted}
+                class:animate-[spin_2s_linear_infinite]={isStarted && !isPaused}
                 class="animate-reverse absolute inset-2 rounded-full border-4 border-primary/60 shadow-xl shadow-primary/30 backdrop-blur-sm"
                 style="animation-direction: reverse;"
               >
@@ -129,7 +183,7 @@
                 ></div>
               </div>
               <div
-                class:animate-[spin_4s_linear_infinite]={isStarted}
+                class:animate-[spin_4s_linear_infinite]={isStarted && !isPaused}
                 class="absolute inset-4 rounded-full border-4 border-primary/40 shadow-xl shadow-primary/30 backdrop-blur-sm"
               >
                 <div
@@ -137,7 +191,7 @@
                 ></div>
               </div>
               <div
-                class:animate-[pulse_2s_ease-in-out_infinite]={isStarted}
+                class:animate-[pulse_2s_ease-in-out_infinite]={isStarted && !isPaused}
                 class="absolute inset-0 opacity-50"
               >
                 <div
@@ -148,123 +202,169 @@
                   ></div>
                 </div>
               </div>
+              {#if isStarted && !isPaused}
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <span class="text-xl font-bold text-primary drop-shadow-lg">{timer}s</span>
+                </div>
+              {/if}
             </div>
 
             {#if isStarted}
-              <div class="mt-8 flex flex-col gap-4 px-4 sm:mt-12 sm:scale-110 sm:flex-row sm:gap-6">
-                <button
+              <div class="mt-8 flex flex-row gap-4 px-4 sm:mt-12 sm:scale-110 sm:gap-6">
+                <Button.Root
+                  variant="destructive"
                   onclick={resetState}
-                  class="group relative flex w-full items-center justify-center gap-3 rounded-full bg-gradient-to-r from-destructive via-destructive/90 to-destructive/80 px-6 py-3 text-white shadow-xl shadow-destructive/20 backdrop-blur-sm transition-all duration-300 hover:translate-y-[-2px] hover:shadow-destructive/40 sm:w-auto sm:px-8"
+                  class="transition-all hover:scale-105 active:scale-95"
                 >
-                  <span
-                    class="absolute inset-0 rounded-full bg-gradient-to-r from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
-                  ></span>
-                  <X
-                    class="h-5 w-5 transition-transform group-hover:rotate-90 group-hover:scale-110"
-                  />
-                  <span class="font-medium tracking-wide">Cancel</span>
-                </button>
-                <button
+                  <X class="h-4 w-4" />
+                </Button.Root>
+                <Button.Root
+                  onclick={pauseRecording}
+                  class="transition-all hover:scale-105 active:scale-95"
+                >
+                  {#if isPaused}
+                    <Play class="h-4 w-4" />
+                  {:else}
+                    <Pause class="h-4 w-4" />
+                  {/if}
+                </Button.Root>
+                <Button.Root
                   onclick={() => stopRecording(true)}
                   disabled={isLoading}
-                  class="group relative flex w-full items-center justify-center gap-3 rounded-full bg-gradient-to-r from-primary via-primary/90 to-primary/80 px-6 py-3 text-white shadow-xl shadow-primary/20 backdrop-blur-sm transition-all duration-300 hover:translate-y-[-2px] hover:shadow-primary/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-primary/20 sm:w-auto sm:px-8"
+                  class="transition-all hover:scale-105 active:scale-95"
                 >
-                  <span
-                    class="absolute inset-0 rounded-full bg-gradient-to-r from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
-                  ></span>
                   {#if isLoading}
                     <div
-                      class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
+                      class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
                     ></div>
                   {:else}
-                    <Pause class="h-5 w-5 transition-transform group-hover:scale-125" />
+                    <Check class="h-4 w-4" />
                   {/if}
-
-                  <span class="font-medium tracking-wide">Done</span>
-                </button>
+                </Button.Root>
+                {#if transcriptionHistory.length > 0}
+                  <Button.Root
+                    onclick={() => (showHistory = !showHistory)}
+                    class="transition-all hover:scale-105 active:scale-95"
+                  >
+                    {#if showHistory}
+                      <X class="h-4 w-4" />
+                    {:else}
+                      <Clock class="h-4 w-4" />
+                    {/if}
+                  </Button.Root>
+                {/if}
               </div>
             {:else}
-              <button
+              <Button.Root
                 onclick={startRecording}
-                class="group relative mt-8 flex w-full items-center justify-center gap-3 overflow-hidden rounded-full bg-gradient-to-r from-primary via-primary/90 to-primary/80 px-6 py-3 text-white shadow-xl shadow-primary/30 backdrop-blur-sm transition-all duration-300 hover:translate-y-[-2px] hover:scale-105 hover:shadow-primary/50 sm:mt-12 sm:w-auto sm:px-8"
+                class="mt-8 transition-all hover:scale-105 active:scale-95 sm:mt-12"
               >
-                <span
-                  class="absolute inset-0 rounded-full bg-gradient-to-r from-white/0 via-white/30 to-white/0 opacity-0 transition-opacity group-hover:opacity-100"
-                ></span>
-                <MessageSquarePlus
-                  class="h-5 w-5 transition-transform group-hover:rotate-12 group-hover:scale-110"
-                />
-                <span class="font-medium tracking-wide">Start Conversation</span>
-              </button>
+                <MessageSquarePlus class="mr-2 h-4 w-4" />
+                Start Conversation
+              </Button.Root>
             {/if}
           </div>
 
           {#if isStarted}
             <div
-              class="p-4 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 md:p-8"
+              class="flex flex-col p-4 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 md:p-8"
             >
-              <div
-                class="relative overflow-hidden rounded-lg border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5 p-4 shadow-xl shadow-primary/10 backdrop-blur-md md:p-6"
+              {#if showHistory && transcriptionHistory.length > 0}
+                <div
+                  class="mb-4 max-h-48 overflow-y-auto rounded-lg border border-primary/20 bg-black/40 p-4 backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-top-4"
+                >
+                  <h3 class="mb-4 text-sm font-medium uppercase tracking-wide text-primary/90">
+                    History
+                  </h3>
+                  <div class="space-y-4">
+                    {#each [...transcriptionHistory].reverse() as entry}
+                      <div
+                        class="rounded-lg border border-primary/20 bg-primary/5 p-3 transition-all duration-300 animate-in fade-in-50 slide-in-from-left-4 hover:bg-primary/10"
+                      >
+                        <p class="text-sm text-white/90">{entry.text}</p>
+                        <div class="mt-2 flex items-center gap-2 text-xs text-primary/70">
+                          <Clock class="h-3 w-3" />
+                          <span>{entry.timestamp.toLocaleTimeString()}</span>
+                        </div>
+                      </div>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+
+              <Card.Root
+                class="relative overflow-hidden border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5 shadow-xl shadow-primary/10 backdrop-blur-md"
               >
                 <div
                   class="absolute inset-0 rounded-lg bg-gradient-to-tr from-primary/10 via-transparent to-primary/10"
                 ></div>
-
-                <div class="relative z-10">
-                  <span
-                    class="mb-2 inline-block text-sm font-medium uppercase tracking-wide text-primary/90"
-                    >Transcription</span
+                <Card.Header class="relative z-10">
+                  <Card.Title
+                    class="mb-2 text-sm font-medium uppercase tracking-wide text-primary/90"
+                    >Transcription</Card.Title
                   >
-
-                  {#if isLoading}
-                    <div class="flex items-center gap-3">
-                      <div
-                        class="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"
-                      ></div>
-                      <p
-                        class="relative animate-pulse text-base font-light leading-relaxed text-white/90 transition-opacity md:text-lg"
-                      >
-                        Processing your audio...
-                      </p>
-                    </div>
-                  {:else}
-                    <p
+                  <Card.Description>
+                    <div
                       class="relative text-base font-light leading-relaxed text-white/90 transition-opacity md:text-lg"
                     >
-                      {#if transcription}
-                        <span class="animate-in fade-in slide-in-from-bottom-2"
-                          >{transcription}</span
-                        >
-                      {:else}
-                        <span class="flex items-center gap-2">
-                          Listening
-                          <span class="inline-flex">
-                            <span class="animate-bounce delay-100">.</span>
-                            <span class="animate-bounce delay-200">.</span>
-                            <span class="animate-bounce delay-300">.</span>
-                          </span>
-                        </span>
-                      {/if}
-                    </p>
-                  {/if}
-                </div>
-
-                <div class="absolute right-0 top-0 h-20 w-20 opacity-20">
-                  <div
-                    class="absolute inset-0 animate-[spin_3s_linear_infinite] rounded-full border-4 border-primary"
-                  ></div>
-                  <div
-                    class="absolute inset-2 animate-[spin_2s_linear_infinite] rounded-full border-4 border-primary"
-                  ></div>
-                  <div
-                    class="absolute inset-4 animate-[spin_4s_linear_infinite] rounded-full border-4 border-primary"
-                  ></div>
-                </div>
-
-                <div
-                  class="absolute bottom-2 right-2 h-2 w-2 animate-ping rounded-full bg-primary"
-                ></div>
-              </div>
+                      <div class="flex flex-col gap-2">
+                        {#if transcription}
+                          <span class="animate-in fade-in slide-in-from-bottom-2"
+                            >{transcription}</span
+                          >
+                        {/if}
+                        <div class="mt-2">
+                          {#if isLoading}
+                            <div class="flex items-center gap-3">
+                              <div
+                                class="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"
+                              ></div>
+                              <span class="text-sm text-primary/70">Processing audio...</span>
+                            </div>
+                          {:else if isPaused}
+                            <div class="flex items-center gap-3">
+                              <div class="h-4 w-4 rounded-full border-2 border-primary"></div>
+                              <span class="text-sm text-primary/70">Paused</span>
+                            </div>
+                          {:else if isNextStageRunning}
+                            <span class="animate-pulse text-sm text-primary/70"
+                              >Next stage running...</span
+                            >
+                          {:else}
+                            <div class="flex items-center gap-3">
+                              <div class="flex gap-1">
+                                <div
+                                  class="h-4 w-0.5 animate-[wave_1s_ease-in-out_infinite] bg-primary"
+                                ></div>
+                                <div
+                                  class="h-4 w-0.5 animate-[wave_1s_ease-in-out_infinite_0.2s] bg-primary"
+                                ></div>
+                                <div
+                                  class="h-4 w-0.5 animate-[wave_1s_ease-in-out_infinite_0.4s] bg-primary"
+                                ></div>
+                              </div>
+                              <span class="text-sm text-primary/70">Listening</span>
+                            </div>
+                          {/if}
+                        </div>
+                      </div>
+                    </div>
+                  </Card.Description>
+                </Card.Header>
+                <Card.Content>
+                  <div class="absolute right-[0.5em] top-[0.5rem] h-20 w-20 opacity-20">
+                    <div
+                      class="absolute inset-0 animate-[spin_3s_linear_infinite] rounded-full border-4 border-primary"
+                    ></div>
+                    <div
+                      class="absolute inset-2 animate-[spin_2s_linear_infinite] rounded-full border-4 border-primary"
+                    ></div>
+                    <div
+                      class="absolute inset-4 animate-[spin_4s_linear_infinite] rounded-full border-4 border-primary"
+                    ></div>
+                  </div>
+                </Card.Content>
+              </Card.Root>
             </div>
           {/if}
         </div>
