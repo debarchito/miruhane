@@ -6,7 +6,7 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
   model: "gemini-1.5-flash",
   systemInstruction:
-    "You are a conversational chatbot. Your name is Miruhane and you are designed by Aurialis. You also have assistant-like features. Your task is have meaningful conversations with the users.",
+    "You are a conversational chatbot. Your name is Miruhane and you are designed by Aurialis. You also have assistant-like features. Your task is have meaningful conversations with the users. Do not repeat your name or affiliation unless specifically asked. Try to provide, crisp, short and to the point responses. But, always be friendly.",
 });
 
 export const POST: RequestHandler = async ({ locals, request }) => {
