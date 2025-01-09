@@ -20,6 +20,7 @@
   let transcriptionHistory = $state<{ text: string; timestamp: Date }[]>([]);
   let showHistory = $state(false);
   let timerInterval: ReturnType<typeof setInterval>;
+  // eslint-disable-next-line
   let audioChunks: BlobPart[] = [];
 
   // Recording functionality
@@ -107,6 +108,7 @@
       const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
       const audioFD = new FormData();
       const contextFD = new FormData();
+      const textFD = new FormData();
       audioFD.append("audio", audioBlob);
 
       isLoading = true;
@@ -116,23 +118,33 @@
           body: audioFD,
         });
         const infered = await inferRes.json();
-
-        transcription = infered.text.text;
+        transcription = infered.text;
         transcriptionHistory = [
           ...transcriptionHistory,
           {
-            text: infered.text.text,
+            text: infered.text,
             timestamp: new Date(),
           },
         ];
-
-        contextFD.append("context", infered.text.text);
+        contextFD.append("context", infered.text);
         const genRes = await fetch("/api/gen", {
           method: "POST",
           body: contextFD,
         });
         const generated = await genRes.json();
         conversationResult = generated.text;
+        textFD.append("text", generated.text);
+        const speakRes = await fetch("/api/speak", {
+          method: "POST",
+          body: textFD,
+        });
+        const spoken = await speakRes.json();
+        const blob = new Blob(
+          [Uint8Array.from(atob(spoken.res.audio_data), (c) => c.charCodeAt(0))],
+          { type: "audio/aac" },
+        );
+        const audio = new Audio(URL.createObjectURL(blob));
+        audio.play();
         isNextStageRunning = true;
       } catch (err) {
         console.error("Error processing audio:", err);
@@ -295,26 +307,49 @@
               class="flex flex-col gap-4 p-4 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 md:p-8"
             >
               {#if showHistory && transcriptionHistory.length > 0}
-                <div
-                  class="mb-4 max-h-48 overflow-y-auto rounded-lg border border-primary/20 bg-black/40 p-4 backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-top-4"
+                <Card.Root
+                  class="relative mb-4 max-h-48 overflow-hidden overflow-y-auto border border-primary/20 shadow-xl shadow-primary/10 backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-top-4"
                 >
-                  <h3 class="mb-4 text-sm font-medium uppercase tracking-wide text-primary/90">
-                    History
-                  </h3>
-                  <div class="space-y-4">
-                    {#each [...transcriptionHistory].reverse() as entry}
-                      <div
-                        class="rounded-lg border border-primary/20 bg-primary/5 p-3 transition-all duration-300 animate-in fade-in-50 slide-in-from-left-4 hover:bg-primary/10"
-                      >
-                        <p class="text-sm text-white/90">{entry.text}</p>
-                        <div class="mt-2 flex items-center gap-2 text-xs text-primary/70">
-                          <Clock class="h-3 w-3" />
-                          <span>{entry.timestamp.toLocaleTimeString()}</span>
-                        </div>
+                  <Card.Header class="relative z-10">
+                    <Card.Title
+                      class="mb-2 text-sm font-medium uppercase tracking-wide text-primary/90"
+                    >
+                      History
+                    </Card.Title>
+                    <Card.Description>
+                      <div class="space-y-4">
+                        {#each [...transcriptionHistory].reverse() as entry}
+                          <div
+                            class="rounded-lg border border-primary/20 bg-primary/5 p-3 transition-all duration-300 animate-in fade-in-50 slide-in-from-left-4 hover:bg-primary/10"
+                          >
+                            <p
+                              class="text-base font-light leading-relaxed text-primary dark:text-white"
+                            >
+                              {entry.text}
+                            </p>
+                            <div class="mt-2 flex items-center gap-2 text-xs text-primary/70">
+                              <Clock class="h-3 w-3" />
+                              <span>{entry.timestamp.toLocaleTimeString()}</span>
+                            </div>
+                          </div>
+                        {/each}
                       </div>
-                    {/each}
-                  </div>
-                </div>
+                    </Card.Description>
+                  </Card.Header>
+                  <Card.Content>
+                    <div class="absolute right-[0.5em] top-[0.5rem] h-20 w-20 opacity-20">
+                      <div
+                        class="absolute inset-0 animate-[spin_3s_linear_infinite] rounded-full border-4 border-primary"
+                      ></div>
+                      <div
+                        class="absolute inset-2 animate-[spin_2s_linear_infinite] rounded-full border-4 border-primary"
+                      ></div>
+                      <div
+                        class="absolute inset-4 animate-[spin_4s_linear_infinite] rounded-full border-4 border-primary"
+                      ></div>
+                    </div>
+                  </Card.Content>
+                </Card.Root>
               {/if}
               <Card.Root
                 class="relative overflow-hidden border border-primary/20 shadow-xl shadow-primary/10 backdrop-blur-md"

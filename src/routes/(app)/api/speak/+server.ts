@@ -1,5 +1,5 @@
 import type { RequestHandler } from "./$types";
-import { HUGGINGFACE_TOKEN } from "$env/static/private";
+import { SPEECHIFY_KEY } from "$env/static/private";
 
 const headers = {
   "Content-Type": "application/json",
@@ -9,7 +9,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
   if (!locals.session) {
     return new Response(
       JSON.stringify({
-        text: null,
+        res: null,
         status: 403,
         message: "Action not allowed",
       }),
@@ -21,14 +21,14 @@ export const POST: RequestHandler = async ({ locals, request }) => {
   }
 
   const data = await request.formData();
-  const audio = data.get("audio");
+  const text = data.get("text");
 
-  if (!audio) {
+  if (!text) {
     return new Response(
       JSON.stringify({
-        text: null,
+        res: null,
         status: 400,
-        message: "No audio provided",
+        message: "No text provided",
       }),
       {
         status: 400,
@@ -37,22 +37,23 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     );
   }
 
-  const res = await fetch("https://api-inference.huggingface.co/models/openai/whisper-base", {
+  const res = await fetch("https://api.sws.speechify.com/v1/audio/speech", {
     headers: {
-      Authorization: `Bearer ${HUGGINGFACE_TOKEN}`,
+      Accept: "*/*",
+      Authorization: `Bearer ${SPEECHIFY_KEY}`,
       ...headers,
     },
     method: "POST",
-    body: audio,
+    body: JSON.stringify({
+      input: text,
+      voice_id: "kristy",
+      audio_format: "aac",
+    }),
   });
-
-  const result = await res.json();
 
   return new Response(
     JSON.stringify({
-      text: result.text,
-      status: 200,
-      message: "Inference successful",
+      res: await res.json(),
     }),
     {
       status: 200,
