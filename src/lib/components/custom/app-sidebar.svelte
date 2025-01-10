@@ -43,6 +43,7 @@
 
   function handleSave() {
     settings.set([
+      ...settings.get,
       { key: "model-stt", value: sttModel },
       { key: "model-tts", value: ttsModel },
       { key: "model-context", value: contextModel },
