@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { settings } from "$lib/runes.svelte.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Button from "$lib/components/ui/button/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
@@ -8,7 +9,8 @@
   import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
   import { X, Play, Clock, Pause, Check, MessageSquare, Mic, Volume2 } from "lucide-svelte";
 
-  let { data = $bindable() } = $props();
+  let { data } = $props();
+  settings.set(data.settings);
 
   let mediaRecorder: MediaRecorder;
   // eslint-disable-next-line

@@ -1,23 +1,14 @@
 <script lang="ts">
+  import { settings } from "$lib/runes.svelte.js";
   import NavMain from "$lib/components/custom/nav-main.svelte";
   import NavUser from "$lib/components/custom/nav-user.svelte";
   import * as Select from "$lib/components/ui/select/index.js";
+  import * as Button from "$lib/components/ui/button/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-  import {
-    BookOpen,
-    Bot,
-    ChartPie,
-    Frame,
-    Map,
-    Settings2,
-    Sparkles,
-    History,
-    Speech,
-    PenLine,
-    BrainCircuit,
-  } from "lucide-svelte";
+  import { Sparkles, History, Speech, PenLine, BrainCircuit } from "lucide-svelte";
 
   let { ref = $bindable(null), ...restProps } = $props();
+
   const sttModels = [
     { value: "browser", label: "Browser built-in" },
     { value: "model:whisper-tiny", label: "Whisper Tiny" },
@@ -28,11 +19,18 @@
     { value: "service:speechify", label: "Speechify" },
   ];
   const contextModels = [{ value: "model:gemini-1.5-flash", label: "Gemini 1.5 Flash" }];
-  let sttModel = $state(restProps.settings.find((f) => f.key === "model-stt")?.value ?? "browser");
-  let ttsModel = $state(restProps.settings.find((f) => f.key === "model-tts")?.value ?? "browser");
-  let contextModel = $state(
-    restProps.settings.find((f) => f.key === "model-context")?.value ?? "model:gemini-1.5-flash",
+
+  let sttModel = $state(
+    settings.get.find((s) => s.key === "model-stt")?.value ?? "model:whisper-base",
   );
+  let ttsModel = $state(
+    settings.get.find((s) => s.key === "model-tts")?.value ?? "service:speechify",
+  );
+  let contextModel = $state(
+    settings.get.find((s) => s.key === "model-context")?.value ?? "model:gemini-1.5-flash",
+  );
+  let hasChanges = $state(false);
+
   const sttTriggerContent = $derived(
     sttModels.find((f) => f.value === sttModel)?.label ?? "Select",
   );
@@ -42,6 +40,20 @@
   const contextTriggerContent = $derived(
     contextModels.find((f) => f.value === contextModel)?.label ?? "Select",
   );
+
+  function handleSave() {
+    settings.set([
+      { key: "model-stt", value: sttModel },
+      { key: "model-tts", value: ttsModel },
+      { key: "model-context", value: contextModel },
+    ]);
+    fetch("/api/settings/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings.diff),
+    });
+    hasChanges = false;
+  }
 
   const data = {
     user: {
@@ -56,86 +68,11 @@
         icon: History,
         isActive: true,
         items: [
-          {
-            title: "How far does it go? Does it go over the top?",
-            url: "#",
-          },
-          {
-            title: "Starred",
-            url: "#",
-          },
-          {
-            title: "Settings",
-            url: "#",
-          },
-          {
-            title: "... more",
-            url: "/history",
-          },
+          { title: "How far does it go? Does it go over the top?", url: "#" },
+          { title: "Starred", url: "#" },
+          { title: "Settings", url: "#" },
+          { title: "... more", url: "/history" },
         ],
-      },
-      {
-        title: "Documentation",
-        url: "#",
-        icon: BookOpen,
-        items: [
-          {
-            title: "Introduction",
-            url: "#",
-          },
-          {
-            title: "Get Started",
-            url: "#",
-          },
-          {
-            title: "Tutorials",
-            url: "#",
-          },
-          {
-            title: "Changelog",
-            url: "#",
-          },
-        ],
-      },
-      {
-        title: "Settings",
-        url: "#",
-        icon: Settings2,
-        items: [
-          {
-            title: "General",
-            url: "#",
-          },
-          {
-            title: "Team",
-            url: "#",
-          },
-          {
-            title: "Billing",
-            url: "#",
-          },
-          {
-            title: "Limits",
-            url: "#",
-          },
-        ],
-      },
-    ],
-    projects: [
-      {
-        name: "Design Engineering",
-        url: "#",
-        icon: Frame,
-      },
-      {
-        name: "Sales & Marketing",
-        url: "#",
-        icon: ChartPie,
-      },
-      {
-        name: "Travel",
-        url: "#",
-        icon: Map,
       },
     ],
   };
@@ -168,10 +105,8 @@
     <Sidebar.Group>
       <Sidebar.GroupLabel><PenLine class="mr-2" /> STT Backend</Sidebar.GroupLabel>
       <Sidebar.Menu>
-        <Select.Root type="single" bind:value={sttModel}>
-          <Select.Trigger class="w-[180px]">
-            {sttTriggerContent}
-          </Select.Trigger>
+        <Select.Root type="single" bind:value={sttModel} onValueChange={() => (hasChanges = true)}>
+          <Select.Trigger class="w-[180px]">{sttTriggerContent}</Select.Trigger>
           <Select.Content>
             <Select.Group>
               {#each sttModels as model}
@@ -185,10 +120,12 @@
     <Sidebar.Group>
       <Sidebar.GroupLabel><BrainCircuit class="mr-2" /> Context Backend</Sidebar.GroupLabel>
       <Sidebar.Menu>
-        <Select.Root type="single" bind:value={contextModel}>
-          <Select.Trigger class="w-[180px]">
-            {contextTriggerContent}
-          </Select.Trigger>
+        <Select.Root
+          type="single"
+          bind:value={contextModel}
+          onValueChange={() => (hasChanges = true)}
+        >
+          <Select.Trigger class="w-[180px]">{contextTriggerContent}</Select.Trigger>
           <Select.Content>
             <Select.Group>
               {#each contextModels as model}
@@ -202,10 +139,8 @@
     <Sidebar.Group>
       <Sidebar.GroupLabel><Speech class="mr-2" /> TTS Backend</Sidebar.GroupLabel>
       <Sidebar.Menu>
-        <Select.Root type="single" bind:value={ttsModel}>
-          <Select.Trigger class="w-[180px]">
-            {ttsTriggerContent}
-          </Select.Trigger>
+        <Select.Root type="single" bind:value={ttsModel} onValueChange={() => (hasChanges = true)}>
+          <Select.Trigger class="w-[180px]">{ttsTriggerContent}</Select.Trigger>
           <Select.Content>
             <Select.Group>
               {#each ttsModels as model}
@@ -216,6 +151,12 @@
         </Select.Root>
       </Sidebar.Menu>
     </Sidebar.Group>
+    {#if hasChanges}
+      <Sidebar.Group>
+        <Button.Root onclick={handleSave} variant="outline" class="w-full">Save Changes</Button.Root
+        >
+      </Sidebar.Group>
+    {/if}
   </Sidebar.Content>
   <Sidebar.Footer>
     <NavUser user={data.user} />
