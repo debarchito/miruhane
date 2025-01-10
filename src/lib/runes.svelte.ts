@@ -20,5 +20,9 @@ export const settings = (function () {
       data = newData;
       diff = data.filter((d) => !prevData.some((l) => l.key === d.key && l.value === d.value));
     },
+    getKeyValue(searchKey: string) {
+      const item = data.find(({ key }) => key === searchKey);
+      return item ? item.value : "";
+    },
   };
 })();
