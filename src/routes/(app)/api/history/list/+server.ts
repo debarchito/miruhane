@@ -5,8 +5,8 @@ import type { RequestHandler } from "./$types";
 const headers = {
   "Content-Type": "application/json",
 };
-const requestSchema = z.object({
-  historyId: z.string(),
+const schema = z.object({
+  limit: z.number(),
 });
 
 export const GET: RequestHandler = async ({ locals, request }) => {
@@ -25,7 +25,7 @@ export const GET: RequestHandler = async ({ locals, request }) => {
   }
 
   const body = await request.json();
-  const result = requestSchema.safeParse(body);
+  const result = schema.safeParse(body);
 
   if (!result.success) {
     return new Response(
@@ -33,7 +33,6 @@ export const GET: RequestHandler = async ({ locals, request }) => {
         res: null,
         status: 400,
         message: "Invalid request body",
-        errors: result.error.errors,
       }),
       {
         status: 400,
@@ -42,35 +41,16 @@ export const GET: RequestHandler = async ({ locals, request }) => {
     );
   }
 
-  const { historyId } = result.data;
-
-  const res = await db.query.history.findFirst({
-    where: (table, { eq, and }) =>
-      and(eq(table.userId, locals.session!.userId), eq(table.id, historyId)),
-    with: {
-      chatEntries: true,
-    },
+  const res = await db.query.history.findMany({
+    where: (table, { eq }) => eq(table.userId, locals.session!.userId),
+    limit: result.data.limit,
   });
-
-  if (!res) {
-    return new Response(
-      JSON.stringify({
-        res: null,
-        status: 404,
-        message: "History not found",
-      }),
-      {
-        status: 404,
-        headers,
-      },
-    );
-  }
 
   return new Response(
     JSON.stringify({
       res,
       status: 200,
-      message: "History retrieved",
+      message: "History listed",
     }),
     {
       status: 200,

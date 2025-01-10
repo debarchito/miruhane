@@ -74,7 +74,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
   return new Response(
     JSON.stringify({
       status: 200,
-      message: "Chat entry created",
+      message: "Chat entry added",
     }),
     {
       status: 200,
