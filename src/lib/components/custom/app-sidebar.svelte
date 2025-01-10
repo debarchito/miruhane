@@ -43,7 +43,7 @@
 
   function handleSave() {
     settings.set([
-      ...settings.get,
+      ...settings.get.filter((s) => !["model-stt", "model-tts", "model-context"].includes(s.key)),
       { key: "model-stt", value: sttModel },
       { key: "model-tts", value: ttsModel },
       { key: "model-context", value: contextModel },
