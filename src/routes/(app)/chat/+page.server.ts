@@ -1,3 +1,4 @@
+import { db } from "$lib/server/db";
 import { redirect } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 
@@ -8,6 +9,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 
   return {
     user: locals.user!,
-    session: locals.session!,
+    session: locals.session,
+    settings: await db.query.userSetting.findMany({
+      where: (table, { eq }) => eq(table.userId, locals.user!.id),
+      columns: {
+        key: true,
+        value: true,
+      },
+    }),
   };
 };

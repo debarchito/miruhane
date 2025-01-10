@@ -14,25 +14,33 @@
     History,
     Speech,
     PenLine,
+    BrainCircuit,
   } from "lucide-svelte";
 
   let { ref = $bindable(null), ...restProps } = $props();
   const sttModels = [
-    { value: "stt-web", label: "Browser built-in" },
-    { value: "stt-wt", label: "Whisper Tiny" },
-    { value: "stt-ws", label: "Whisper Base" },
+    { value: "browser", label: "Browser built-in" },
+    { value: "model:whisper-tiny", label: "Whisper Tiny" },
+    { value: "model:whisper-base", label: "Whisper Base" },
   ];
   const ttsModels = [
-    { value: "tts-wt", label: "Whisper Tiny" },
-    { value: "tts-ws", label: "Whisper Base" },
+    { value: "browser", label: "Browser built-in" },
+    { value: "service:speechify", label: "Speechify" },
   ];
-  let sttModel = $state("");
-  let ttsModel = $state("");
+  const contextModels = [{ value: "model:gemini-1.5-flash", label: "Gemini 1.5 Flash" }];
+  let sttModel = $state(restProps.settings.find((f) => f.key === "model-stt")?.value ?? "browser");
+  let ttsModel = $state(restProps.settings.find((f) => f.key === "model-tts")?.value ?? "browser");
+  let contextModel = $state(
+    restProps.settings.find((f) => f.key === "model-context")?.value ?? "model:gemini-1.5-flash",
+  );
   const sttTriggerContent = $derived(
     sttModels.find((f) => f.value === sttModel)?.label ?? "Select",
   );
   const ttsTriggerContent = $derived(
-    sttModels.find((f) => f.value === ttsModel)?.label ?? "Select",
+    ttsModels.find((f) => f.value === ttsModel)?.label ?? "Select",
+  );
+  const contextTriggerContent = $derived(
+    contextModels.find((f) => f.value === contextModel)?.label ?? "Select",
   );
 
   const data = {
@@ -63,25 +71,6 @@
           {
             title: "... more",
             url: "/history",
-          },
-        ],
-      },
-      {
-        title: "Models",
-        url: "#",
-        icon: Bot,
-        items: [
-          {
-            title: "Genesis",
-            url: "#",
-          },
-          {
-            title: "Explorer",
-            url: "#",
-          },
-          {
-            title: "Quantum",
-            url: "#",
           },
         ],
       },
@@ -177,7 +166,7 @@
   <Sidebar.Content>
     <NavMain items={data.navMain} />
     <Sidebar.Group>
-      <Sidebar.GroupLabel><PenLine class="mr-2" /> STT Model</Sidebar.GroupLabel>
+      <Sidebar.GroupLabel><PenLine class="mr-2" /> STT Backend</Sidebar.GroupLabel>
       <Sidebar.Menu>
         <Select.Root type="single" bind:value={sttModel}>
           <Select.Trigger class="w-[180px]">
@@ -194,7 +183,24 @@
       </Sidebar.Menu>
     </Sidebar.Group>
     <Sidebar.Group>
-      <Sidebar.GroupLabel><Speech class="mr-2" /> TTS Model</Sidebar.GroupLabel>
+      <Sidebar.GroupLabel><BrainCircuit class="mr-2" /> Context Backend</Sidebar.GroupLabel>
+      <Sidebar.Menu>
+        <Select.Root type="single" bind:value={contextModel}>
+          <Select.Trigger class="w-[180px]">
+            {contextTriggerContent}
+          </Select.Trigger>
+          <Select.Content>
+            <Select.Group>
+              {#each contextModels as model}
+                <Select.Item value={model.value} label={model.label}>{model.label}</Select.Item>
+              {/each}
+            </Select.Group>
+          </Select.Content>
+        </Select.Root>
+      </Sidebar.Menu>
+    </Sidebar.Group>
+    <Sidebar.Group>
+      <Sidebar.GroupLabel><Speech class="mr-2" /> TTS Backend</Sidebar.GroupLabel>
       <Sidebar.Menu>
         <Select.Root type="single" bind:value={ttsModel}>
           <Select.Trigger class="w-[180px]">

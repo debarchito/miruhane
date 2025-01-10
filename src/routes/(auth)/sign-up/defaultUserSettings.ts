@@ -18,7 +18,7 @@ export default function (userId: string) {
       id: generateToken(),
       userId,
       key: "model-tts",
-      value: "service:speecify",
+      value: "service:speechify",
     },
   ];
 }
