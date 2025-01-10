@@ -1,102 +1,87 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { writable, get } from 'svelte/store';
-  import AppSidebar from '$lib/components/app-sidebar.svelte';
-  import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
-  import { Separator } from '$lib/components/ui/separator/index.js';
-  import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-  import { Mic, MicOff, Send } from 'lucide-svelte';
+  import { onMount } from "svelte";
+  import { writable, get } from "svelte/store";
+  import AppSidebar from "$lib/components/app-sidebar.svelte";
+  import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
+  import { Separator } from "$lib/components/ui/separator/index.js";
+  import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+  import { Mic, MicOff, Send } from "lucide-svelte";
 
+  // Define writable stores with proper types
   const isSpeaking = writable<boolean>(false);
   const isRecording = writable<boolean>(false);
-  const showSubtitles = writable<boolean>(false);
+  const showSubtitles = writable<boolean>(true);
   const scale = writable<number>(1);
-  const textToSpeak = writable<string>('Awaiting your input...');
-  const recordedText = writable<string>('');
-  const accumulatedText = writable<string>('');
+  const textToSpeak = writable<string>("Awaiting your input...");
+  const userInput = writable<string>(""); // Stores user input (recorded or typed)
   const isLoading = writable<boolean>(false);
-  const userInput = writable<string>('');
 
-  let speechRecognition: Window['SpeechRecognition'] | null = null;
+  // Define types for variables
+  let speechRecognition: Window["SpeechRecognition"] | null = null;
   let shouldContinueRecording = false;
 
   const startRecording = (): void => {
-    accumulatedText.set('');
-    recordedText.set('');
-    userInput.set('');
-
     if (speechRecognition && !get(isRecording)) {
-      console.log('Starting recording...');
+      console.log("Starting recording...");
       isRecording.set(true);
       shouldContinueRecording = true;
+      userInput.set(""); // Clear any previous input
       speechRecognition.start();
     }
   };
 
   const stopRecording = (): void => {
     if (speechRecognition && get(isRecording)) {
-      console.log('Stopping recording...');
+      console.log("Stopping recording...");
       isRecording.set(false);
       shouldContinueRecording = false;
       speechRecognition.stop();
-
-      const finalQuery = get(accumulatedText);
-      console.log('Final query being sent to Gemini:', finalQuery);
-      userInput.set(finalQuery);
-
-      if (finalQuery) {
-        onComplete();
-      } else {
-        console.log('No recorded text to process.');
-      }
     }
   };
 
   onMount(() => {
-    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+    if ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) {
       speechRecognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      speechRecognition.lang = 'en-US';
+      speechRecognition.lang = "en-US";
       speechRecognition.interimResults = true;
 
-      speechRecognition.onresult = (event: SpeechRecognitionEvent) => {
-        let transcript = '';
+      speechRecognition.onresult = (event: SpeechRecognitionEvent): void => {
+        let transcript = "";
         for (let i = event.resultIndex; i < event.results.length; i++) {
           transcript += event.results[i][0].transcript;
         }
-        recordedText.set(transcript);
 
         if (event.results[event.resultIndex].isFinal) {
-          const currentText = get(accumulatedText);
-          accumulatedText.set(currentText + ' ' + transcript.trim());
-          console.log('Final recognized speech:', transcript);
-        } else {
-          console.log('Interim result:', transcript);
+          console.log("Final recognized speech:", transcript.trim());
+          // Concatenate the final transcript with the previous input
+          userInput.update((prevInput) => prevInput + " " + transcript.trim());
         }
       };
 
-      speechRecognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('SpeechRecognition error:', event.error);
+      speechRecognition.onerror = (event: SpeechRecognitionErrorEvent): void => {
+        console.error("SpeechRecognition error:", event.error);
         stopRecording();
       };
 
-      speechRecognition.onend = () => {
-        console.log('SpeechRecognition ended.');
+      speechRecognition.onend = (): void => {
+        console.log("SpeechRecognition ended.");
         if (shouldContinueRecording) {
-          console.log('Restarting recording...');
+          console.log("Restarting recording...");
           speechRecognition?.start();
         }
       };
 
-      console.log('SpeechRecognition initialized.');
+      console.log("SpeechRecognition initialized.");
     } else {
-      console.error('SpeechRecognition is not supported in this browser.');
-      textToSpeak.set('Your browser does not support SpeechRecognition.');
+      console.error("SpeechRecognition is not supported in this browser.");
+      textToSpeak.set("Your browser does not support SpeechRecognition.");
     }
   });
 
-  const onComplete = async (): Promise<void> => {
+  const handleSubmit = async (): Promise<void> => {
     const query = get(userInput).trim();
     if (query) {
+      console.log("Query sent to Gemini AI:", query);
       const answer = await getGeminiAnswer(query);
       textToSpeak.set(answer);
       if (get(showSubtitles)) {
@@ -106,50 +91,63 @@
   };
 
   const getGeminiAnswer = async (query: string): Promise<string> => {
-    const apiKey = 'YOUR_GEMINI_API_KEY'; 
+    const apiKey = "YOUR_GEMINI_API_KEY"; // Replace with your actual API key
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    const requestBody = { contents: [{ parts: [{ text: query }] }] };
+
+    const requestBody = {
+      contents: [
+        {
+          parts: [{ text: query }],
+        },
+      ],
+    };
 
     try {
-      isLoading.set(true);
+      isLoading.set(true); // Indicate loading state
+
       const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody), // Send the request payload
       });
 
-      const data: { contents: { parts: { text: string }[] }[] } = await response.json();
-      isLoading.set(false);
-      return data.contents?.[0]?.parts?.[0]?.text || 'Sorry, I couldn\'t process that.';
+      if (!response.ok) {
+        console.error("Error response from Gemini API:", response.statusText);
+        return `Error: ${response.statusText}`;
+      }
+
+      const data = await response.json();
+      isLoading.set(false); // Turn off loading state
+
+      // Log the raw API response for debugging
+      console.log("Raw API Response:", data);
+
+      // Safely extract and return the generated content
+      if (data?.candidates?.length > 0 && data.candidates[0]?.content?.parts?.[0]?.text) {
+        return data.candidates[0].content.parts[0].text; // Return the text generated by Gemini
+      } else {
+        return "No valid content found in the response.";
+      }
     } catch (error) {
-      console.error('Error fetching from Gemini API:', error);
-      isLoading.set(false);
-      return 'There was an error processing your request. Please try again.';
+      console.error("Error fetching from Gemini API:", error);
+      isLoading.set(false); // Turn off loading state
+      return "There was an error processing your request. Please try again.";
     }
   };
 
   const speak = (text: string): void => {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.onstart = () => {
-      console.log('Speaking...');
+    utterance.onstart = (): void => {
       isSpeaking.set(true);
       scale.set(1.2);
     };
-    utterance.onend = () => {
-      console.log('Speech ended.');
+    utterance.onend = (): void => {
       isSpeaking.set(false);
       scale.set(1);
     };
     speechSynthesis.speak(utterance);
-  };
-
-  const handleSubmit = (): void => {
-    const inputText = get(userInput).trim();
-    if (inputText) {
-      console.log('Sending user input to Gemini:', inputText);
-      userInput.set('');
-      onComplete();
-    }
   };
 </script>
 
@@ -199,6 +197,7 @@
         <button
           onclick={handleSubmit}
           class="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white shadow-md hover:bg-green-700"
+          disabled={$isRecording}
         >
           <Send /> Send
         </button>
@@ -246,7 +245,8 @@
   }
 
   @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
       transform: scale(1);
     }
     50% {
