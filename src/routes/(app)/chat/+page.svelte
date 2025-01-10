@@ -308,7 +308,12 @@
 </svelte:head>
 
 <Sidebar.Provider>
-  <AppSidebar username={data.user.username} email={data.user.email} settings={data.settings} />
+  <AppSidebar
+    username={data.user.username}
+    email={data.user.email}
+    settings={data.settings}
+    history={data.history}
+  />
   <Sidebar.Inset>
     <header class="flex h-16 shrink-0 items-center gap-2">
       <div class="flex w-full items-center gap-2 px-4">

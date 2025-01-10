@@ -68,15 +68,11 @@
         url: "/history",
         icon: History,
         isActive: true,
-        items: [
-          { title: "How far does it go? Does it go over the top?", url: "#" },
-          { title: "Starred", url: "#" },
-          { title: "Settings", url: "#" },
-          { title: "... more", url: "/history" },
-        ],
+        items: [...restProps.history],
       },
     ],
   };
+  console.log(data.navMain);
 </script>
 
 <Sidebar.Root bind:ref variant="inset" {...restProps}>

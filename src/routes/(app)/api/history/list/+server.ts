@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { desc } from "drizzle-orm";
 import { db } from "$lib/server/db";
 import type { RequestHandler } from "./$types";
+import { history } from "$lib/server/db/schema";
 
 const headers = {
   "Content-Type": "application/json",
@@ -43,6 +45,7 @@ export const GET: RequestHandler = async ({ locals, request }) => {
 
   const res = await db.query.history.findMany({
     where: (table, { eq }) => eq(table.userId, locals.session!.userId),
+    orderBy: [desc(history.updatedAt)],
     limit: result.data.limit,
   });
 

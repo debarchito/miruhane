@@ -1,6 +1,8 @@
+import { desc } from "drizzle-orm";
 import { db } from "$lib/server/db";
 import { redirect } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
+import { history } from "$lib/server/db/schema";
 
 export const load: PageServerLoad = async ({ locals }) => {
   if (!locals.session) {
@@ -16,6 +18,11 @@ export const load: PageServerLoad = async ({ locals }) => {
         key: true,
         value: true,
       },
+    }),
+    history: await db.query.history.findMany({
+      where: (table, { eq }) => eq(table.userId, locals.session!.userId),
+      orderBy: [desc(history.updatedAt)],
+      limit: 5,
     }),
   };
 };
