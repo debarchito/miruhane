@@ -42,6 +42,7 @@ export const userSetting = pgTable(
     // this schema design is fine for the testing phase
     key: varchar("key", { length: 64 }).notNull(),
     value: varchar("value", { length: 255 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
   },
   (table) => ({

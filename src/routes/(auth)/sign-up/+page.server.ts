@@ -5,6 +5,7 @@ import { db } from "$lib/server/db/index.js";
 import { redirect, fail } from "@sveltejs/kit";
 import * as table from "$lib/server/db/schema.js";
 import type { PageServerLoad, Actions } from "./$types";
+import defaultUserSettings from "./defaultUserSettings.js";
 import { isValidPassword, isValidUsername } from "$lib/utils.js";
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -57,12 +58,16 @@ export const actions: Actions = {
         parallelism: 1,
       });
 
-      await db.insert(table.user).values({
-        id: userId,
-        username: username as string,
-        email: email as string,
-        passwordHash: passwordHash as string,
-        createdAt: new Date(),
+      await db.transaction(async (trx) => {
+        await Promise.all([
+          trx.insert(table.user).values({
+            id: userId,
+            username: username as string,
+            email: email as string,
+            passwordHash: passwordHash as string,
+          }),
+          trx.insert(table.userSetting).values(defaultUserSettings(userId)),
+        ]);
       });
 
       const token = auth.generateToken();
