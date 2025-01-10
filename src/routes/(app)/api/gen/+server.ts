@@ -1,6 +1,14 @@
+import { z } from "zod";
 import type { RequestHandler } from "./$types";
 import { GEMINI_API_KEY } from "$env/static/private";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const headers = {
+  "Content-Type": "application/json",
+};
+const requestSchema = z.object({
+  context: z.string().min(1, "Context is required"),
+});
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
@@ -11,15 +19,38 @@ const model = genAI.getGenerativeModel({
 
 export const POST: RequestHandler = async ({ locals, request }) => {
   if (!locals.session) {
-    return new Response(null, { status: 403 });
+    return new Response(
+      JSON.stringify({
+        text: null,
+        status: 403,
+        message: "Action not allowed",
+      }),
+      {
+        status: 403,
+        headers,
+      },
+    );
   }
 
   const data = await request.formData();
-  const context = data.get("context");
+  const formData = Object.fromEntries(data);
 
-  if (!context) {
-    return new Response(null, { status: 400 });
+  const result = requestSchema.safeParse(formData);
+  if (!result.success) {
+    return new Response(
+      JSON.stringify({
+        text: null,
+        status: 400,
+        message: result.error.flatten(),
+      }),
+      {
+        status: 400,
+        headers,
+      },
+    );
   }
+
+  const { context } = result.data;
 
   const res = await model.generateContent({
     contents: [
@@ -27,7 +58,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
         role: "user",
         parts: [
           {
-            text: context as string,
+            text: context,
           },
         ],
       },
@@ -41,6 +72,12 @@ export const POST: RequestHandler = async ({ locals, request }) => {
   return new Response(
     JSON.stringify({
       text: res.response.text(),
+      status: 200,
+      message: null,
     }),
+    {
+      status: 200,
+      headers,
+    },
   );
 };

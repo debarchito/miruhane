@@ -1,1 +1,0 @@
-ALTER TABLE "user_setting" ALTER COLUMN "value" SET NOT NULL;

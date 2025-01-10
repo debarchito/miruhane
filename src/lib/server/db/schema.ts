@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, relations } from "drizzle-orm";
 import { pgTable, varchar, timestamp, uniqueIndex, index, pgEnum, text } from "drizzle-orm/pg-core";
 
 export const user = pgTable(
@@ -17,13 +17,19 @@ export const user = pgTable(
   }),
 );
 
+export const userRelations = relations(user, ({ many }) => ({
+  sessions: many(session),
+  userSettings: many(userSetting),
+  histories: many(history),
+}));
+
 export const session = pgTable(
   "session",
   {
     id: varchar("id", { length: 64 }).primaryKey(),
     userId: varchar("user_id", { length: 64 })
       .notNull()
-      .references(() => user.id),
+      .references(() => user.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
     expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
   },
@@ -32,13 +38,17 @@ export const session = pgTable(
   }),
 );
 
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, { fields: [session.userId], references: [user.id] }),
+}));
+
 export const userSetting = pgTable(
   "user_setting",
   {
     id: varchar("id", { length: 64 }).primaryKey(),
     userId: varchar("user_id", { length: 64 })
       .notNull()
-      .references(() => user.id),
+      .references(() => user.id, { onDelete: "cascade" }),
     // not using a enum because I want to be able to add new settings without changing the schema
     // this schema design is fine for the testing phase
     key: varchar("key", { length: 64 }).notNull(),
@@ -51,36 +61,75 @@ export const userSetting = pgTable(
   }),
 );
 
-export const role = pgEnum("role", ["user", "miruhane"]);
-export const chatHistory = pgTable(
-  "chat_history",
+export const userSettingRelations = relations(userSetting, ({ one }) => ({
+  user: one(user, { fields: [userSetting.userId], references: [user.id] }),
+}));
+
+export const history = pgTable(
+  "history",
   {
     id: varchar("id", { length: 64 }).primaryKey(),
     userId: varchar("user_id", { length: 64 })
       .notNull()
-      .references(() => user.id),
+      .references(() => user.id, { onDelete: "cascade" }),
     title: varchar("title", { length: 256 }).notNull(),
-    content: text("content").notNull(),
-    role: role("role").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
   },
   (table) => ({
-    idxChatRole: index("idx_chat_role").on(table.role),
-    idxChatUserId: index("idx_chat_user_id").on(table.userId),
-    idxChatCreatedAt: index("idx_chat_created_at").on(table.createdAt),
-    idxChatUserIdCreatedAt: index("idx_chat_user_id_created_at").on(table.userId, table.createdAt),
-    titleSearchIndex: index("idx_title_search").using(
+    idxHistoryUserId: index("idx_history_user_id").on(table.userId),
+    idxHistoryCreatedAt: index("idx_history_created_at").on(table.createdAt),
+    idxHistoryUserIdCreatedAt: index("idx_history_user_id_created_at").on(
+      table.userId,
+      table.createdAt,
+    ),
+    idxTitleSearch: index("idx_title_search").using(
       "gin",
       sql`to_tsvector('english', ${table.title})`,
     ),
-    contentSearchIndex: index("idx_content_search").using(
+  }),
+);
+
+export const historyRelations = relations(history, ({ one, many }) => ({
+  user: one(user, { fields: [history.userId], references: [user.id] }),
+  chatEntries: many(chatEntry),
+}));
+
+export const role = pgEnum("role", ["user", "miruhane"]);
+export const chatEntry = pgTable(
+  "chat_entry",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    historyId: varchar("history_id", { length: 64 })
+      .notNull()
+      .references(() => history.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    role: role("role").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => ({
+    idxChatRole: index("idx_chat_role").on(table.role),
+    idxChatHistoryId: index("idx_chat_history_id").on(table.historyId),
+    idxChatCreatedAt: index("idx_chat_created_at").on(table.createdAt),
+    idxChatRoleHistoryId: index("idx_chat_role_history_id").on(table.role, table.historyId),
+    idxChatHistoryIdCreatedAt: index("idx_chat_history_id_created_at").on(
+      table.historyId,
+      table.createdAt,
+    ),
+    idxContentSearch: index("idx_content_search").using(
       "gin",
       sql`to_tsvector('english', ${table.content})`,
     ),
   }),
 );
 
+export const chatEntryRelations = relations(chatEntry, ({ one }) => ({
+  history: one(history, { fields: [chatEntry.historyId], references: [history.id] }),
+}));
+
 export type User = typeof user.$inferSelect;
 export type Session = typeof session.$inferSelect;
 export type UserSetting = typeof userSetting.$inferSelect;
-export type ChatHistory = typeof chatHistory.$inferSelect;
+export type History = typeof history.$inferSelect;
+export type ChatEntry = typeof chatEntry.$inferSelect;
