@@ -1,4 +1,5 @@
-import { pgTable, varchar, timestamp, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, varchar, timestamp, uniqueIndex, index, pgEnum, text } from "drizzle-orm/pg-core";
 
 export const user = pgTable(
   "user",
@@ -50,6 +51,36 @@ export const userSetting = pgTable(
   }),
 );
 
+export const role = pgEnum("role", ["user", "miruhane"]);
+export const chatHistory = pgTable(
+  "chat_history",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    userId: varchar("user_id", { length: 64 })
+      .notNull()
+      .references(() => user.id),
+    title: varchar("title", { length: 256 }).notNull(),
+    content: text("content").notNull(),
+    role: role("role").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => ({
+    idxChatRole: index("idx_chat_role").on(table.role),
+    idxChatUserId: index("idx_chat_user_id").on(table.userId),
+    idxChatCreatedAt: index("idx_chat_created_at").on(table.createdAt),
+    idxChatUserIdCreatedAt: index("idx_chat_user_id_created_at").on(table.userId, table.createdAt),
+    titleSearchIndex: index("idx_title_search").using(
+      "gin",
+      sql`to_tsvector('english', ${table.title})`,
+    ),
+    contentSearchIndex: index("idx_content_search").using(
+      "gin",
+      sql`to_tsvector('english', ${table.content})`,
+    ),
+  }),
+);
+
 export type User = typeof user.$inferSelect;
 export type Session = typeof session.$inferSelect;
 export type UserSetting = typeof userSetting.$inferSelect;
+export type ChatHistory = typeof chatHistory.$inferSelect;
