@@ -1,13 +1,14 @@
 <script lang="ts">
+  import { toggleMode, mode } from "mode-watcher";
   import { settings } from "$lib/runes.svelte.js";
   import * as Card from "$lib/components/ui/card/index.js";
+  import { Toggle } from "$lib/components/ui/toggle/index.js";
   import * as Button from "$lib/components/ui/button/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { Separator } from "$lib/components/ui/separator/index.js";
   import AppSidebar from "$lib/components/custom/app-sidebar.svelte";
-  import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
-  import { X, Play, Clock, Pause, Check, MessageSquare, Mic, Volume2 } from "lucide-svelte";
+  import InstantHistory from "$lib/components/custom/instant-history.svelte";
+  import { X, Play, Pause, Check, MessageSquare, Mic, Volume2, Sun, Moon } from "lucide-svelte";
 
   let { data } = $props();
   settings.set(data.settings);
@@ -24,8 +25,7 @@
   let toRunNextStage = $state(false);
   let transcription = $state("");
   let conversationResult = $state("");
-  let transcriptionHistory = $state<{ text: string; timestamp: Date }[]>([]);
-  let showHistory = $state(false);
+  let transcriptionHistory = $state<{ text: string; timestamp: Date; author: string }[]>([]);
   let currentAudio: HTMLAudioElement | null = null;
   let audioCurrentTime: number = 0;
   let isAudioPaused = $state(false);
@@ -183,6 +183,7 @@
       {
         text: inferText,
         timestamp: new Date(),
+        author: "user",
       },
     ];
 
@@ -192,6 +193,15 @@
     }).then((r) => r.json());
 
     conversationResult = genRes.text;
+
+    transcriptionHistory = [
+      ...transcriptionHistory,
+      {
+        text: genRes.text,
+        timestamp: new Date(),
+        author: "miruhane",
+      },
+    ];
 
     if (isVoiceMode) {
       const speakRes = await fetch("/api/speak", {
@@ -300,21 +310,16 @@
 <Sidebar.Provider>
   <AppSidebar username={data.user.username} email={data.user.email} settings={data.settings} />
   <Sidebar.Inset>
-    <header class="flex h-16 shrink-0 items-center gap-2 border-b border-primary/10">
+    <header class="flex h-16 shrink-0 items-center gap-2">
       <div class="flex w-full items-center gap-2 px-4">
         <Sidebar.Trigger class="-ml-1" />
-        <Separator orientation="vertical" class="mr-2 h-4" />
-        <Breadcrumb.Root>
-          <Breadcrumb.List>
-            <Breadcrumb.Item class="hidden md:block">
-              <Breadcrumb.Link href="#">Building Your Application</Breadcrumb.Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Separator class="hidden md:block" />
-            <Breadcrumb.Item>
-              <Breadcrumb.Page>Voice Chat</Breadcrumb.Page>
-            </Breadcrumb.Item>
-          </Breadcrumb.List>
-        </Breadcrumb.Root>
+        <Toggle onclick={toggleMode}>
+          {#if $mode === "dark"}
+            <Sun class="h-5 w-5" />
+          {:else}
+            <Moon class="h-5 w-5" />
+          {/if}
+        </Toggle>
       </div>
     </header>
 
@@ -426,17 +431,7 @@
                 {/if}
 
                 {#if transcriptionHistory.length > 0}
-                  <Button.Root
-                    variant="outline"
-                    onclick={() => (showHistory = !showHistory)}
-                    class="transition-all hover:scale-105 active:scale-95"
-                  >
-                    {#if showHistory}
-                      <X class="h-4 w-4" />
-                    {:else}
-                      <Clock class="h-4 w-4" />
-                    {/if}
-                  </Button.Root>
+                  <InstantHistory bind:transcriptionHistory />
                 {/if}
               </div>
             {:else}
@@ -475,52 +470,6 @@
             <div
               class="flex flex-col gap-4 p-4 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 md:p-8"
             >
-              {#if showHistory && transcriptionHistory.length > 0}
-                <Card.Root
-                  class="relative mb-4 max-h-48 overflow-hidden overflow-y-auto border border-primary/20 shadow-xl shadow-primary/10 backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-top-4"
-                >
-                  <Card.Header class="relative z-10">
-                    <Card.Title
-                      class="mb-2 text-sm font-medium uppercase tracking-wide text-primary/90"
-                    >
-                      History
-                    </Card.Title>
-                    <Card.Description>
-                      <div class="space-y-4">
-                        {#each [...transcriptionHistory].reverse() as entry}
-                          <div
-                            class="rounded-lg border border-primary/20 bg-primary/5 p-3 transition-all duration-300 animate-in fade-in-50 slide-in-from-left-4 hover:bg-primary/10"
-                          >
-                            <p
-                              class="text-base font-light leading-relaxed text-primary dark:text-white"
-                            >
-                              {entry.text}
-                            </p>
-                            <div class="mt-2 flex items-center gap-2 text-xs text-primary/70">
-                              <Clock class="h-3 w-3" />
-                              <span>{entry.timestamp.toLocaleTimeString()}</span>
-                            </div>
-                          </div>
-                        {/each}
-                      </div>
-                    </Card.Description>
-                  </Card.Header>
-                  <Card.Content>
-                    <div class="absolute right-[0.5em] top-[0.5rem] h-20 w-20 opacity-20">
-                      <div
-                        class="absolute inset-0 animate-[spin_3s_linear_infinite] rounded-full border-4 border-primary"
-                      ></div>
-                      <div
-                        class="absolute inset-2 animate-[spin_2s_linear_infinite] rounded-full border-4 border-primary"
-                      ></div>
-                      <div
-                        class="absolute inset-4 animate-[spin_4s_linear_infinite] rounded-full border-4 border-primary"
-                      ></div>
-                    </div>
-                  </Card.Content>
-                </Card.Root>
-              {/if}
-
               <Card.Root
                 class="relative overflow-hidden border border-primary/20 shadow-xl shadow-primary/10 backdrop-blur-md"
               >
