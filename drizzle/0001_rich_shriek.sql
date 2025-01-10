@@ -1,1 +1,0 @@
-ALTER TABLE "user" ALTER COLUMN "password_hash" SET DATA TYPE varchar(98);
