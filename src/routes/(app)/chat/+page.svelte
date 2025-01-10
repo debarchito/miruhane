@@ -6,7 +6,7 @@
   import { Separator } from "$lib/components/ui/separator/index.js";
   import AppSidebar from "$lib/components/custom/app-sidebar.svelte";
   import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
-  import { X, Play, Clock, Pause, Check, MessageSquare, Mic } from "lucide-svelte";
+  import { X, Play, Clock, Pause, Check, MessageSquare, Mic, Volume2 } from "lucide-svelte";
 
   let { data = $bindable() } = $props();
 
@@ -29,6 +29,8 @@
   let isAudioPaused = $state(false);
   let messageText = $state("");
   let isVoiceMode = $state(true);
+  let lastAudioResponse = $state<string | null>(null);
+  // eslint-disable-next-line
   let showStartButton = $state(true);
 
   async function initMediaRecorder() {
@@ -105,6 +107,7 @@
       audioCurrentTime = 0;
       messageText = "";
       showStartButton = true;
+      lastAudioResponse = null;
       if (currentAudio) {
         currentAudio.pause();
         currentAudio = null;
@@ -189,10 +192,25 @@
     conversationResult = genRes.text;
 
     if (isVoiceMode) {
-      return await fetch("/api/speak", {
+      const speakRes = await fetch("/api/speak", {
         method: "POST",
         body: createFormData(genRes.text, "text"),
       }).then((r) => r.json());
+
+      lastAudioResponse = speakRes.res.audio_data;
+      return speakRes;
+    } else {
+      const speakRes = await fetch("/api/speak", {
+        method: "POST",
+        body: createFormData(genRes.text, "text"),
+      }).then((r) => r.json());
+      lastAudioResponse = speakRes.res.audio_data;
+    }
+  }
+
+  async function replayLastAudio() {
+    if (lastAudioResponse) {
+      await playAudioResponse(lastAudioResponse);
     }
   }
 
@@ -596,9 +614,19 @@
                   ></div>
                   <Card.Header class="relative z-10">
                     <Card.Title
-                      class="mb-2 text-sm font-medium uppercase tracking-wide text-primary/90"
+                      class="mb-2 flex items-center gap-2 text-sm font-medium uppercase tracking-wide text-primary/90"
                     >
                       Response
+                      {#if lastAudioResponse}
+                        <Button.Root
+                          variant="ghost"
+                          size="icon"
+                          onclick={replayLastAudio}
+                          class="-my-1 transition-all hover:scale-105 active:scale-95"
+                        >
+                          <Volume2 class="h-4 w-4" />
+                        </Button.Root>
+                      {/if}
                     </Card.Title>
                     <Card.Description>
                       <div
