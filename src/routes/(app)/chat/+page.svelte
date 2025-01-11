@@ -91,7 +91,7 @@
   };
 
   const getGeminiAnswer = async (query: string): Promise<string> => {
-    const apiKey = "AIzaSyA__NBSkwKMipTB2FC73GzYePOkur2Rt1w"; // Replace with your actual API key
+    const apiKey = "Your_Gemini_API_Key"; // Replace with your actual API key
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const requestBody = {
