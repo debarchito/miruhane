@@ -12,6 +12,9 @@
 
   import { onMount } from "svelte";
   import { writable, get } from "svelte/store";
+  const isSpeaking = writable<boolean>(false);
+  const textToSpeak = writable<string>("Awaiting your input...");
+  const scale = writable<number>(1);
 
   let { data } = $props();
   settings.set(data.settings);
@@ -28,7 +31,7 @@
   let toRunNextStage = $state(false);
   let transcription = $state("");
   let conversationResult = $state("");
-  let transcriptionHistory = $state<{ text: string; timestamp: Date; author: string }[]>([]);
+  const transcriptionHistory = writable<{ text: string; timestamp: Date; author: string }[]>([]);
   let currentAudio: HTMLAudioElement | null = null;
   let audioCurrentTime: number = 0;
   let isAudioPaused = $state(false);
@@ -38,7 +41,7 @@
   // eslint-disable-next-line
   let showStartButton = $state(true);
   let speechRecognition: Window["SpeechRecognition"] | null = null;
-  
+  let shouldContinueRecording = false;
 
   async function initMediaRecorder() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -178,8 +181,8 @@
 
           if (event.results[event.resultIndex].isFinal) {
             console.log("Final recognized speech:", transcript.trim());
-            // Concatenate the final transcript with the previous input
-            userInput.update((prevInput) => prevInput + " " + transcript.trim());
+            // Update transcription history and set transcription value
+            transcription += " " + transcript.trim();
           }
         };
 
@@ -197,178 +200,185 @@
         };
 
         console.log("SpeechRecognition initialized.");
+        // Initialize transcription value if it hasn't been set
+        if (!transcription) {
+          transcription = "";
+        }
+
+        // Start or stop recording based on voice mode
+        if (isVoiceMode) {
+          await startRecording();
+        }
+
+        const genRes = await fetch("/api/gen", {
+          method: "POST",
+          body: createFormData(transcription, "context"),
+        }).then((r) => r.json());
+
+        conversationResult = genRes.text;
+
+        transcriptionHistory.update((history) => [
+          ...history,
+          {
+            text: transcription,
+            timestamp: new Date(),
+            author: "user",
+          },
+          {
+            text: genRes.text,
+            timestamp: new Date(),
+            author: "miruhane",
+          },
+        ]);
+
+        if (isVoiceMode && settings.getKeyValue("model-tts") === "browser") {
+          if (!("speechSynthesis" in window)) {
+            console.error("Speech synthesis is not supported in this browser.");
+            return;
+          }
+
+          const utterance = new SpeechSynthesisUtterance(genRes.text);
+
+          // Set language
+          utterance.lang = "en-US";
+
+          // Optional: Select a specific voice
+          const voices = speechSynthesis.getVoices();
+          utterance.voice = voices.find((voice) => voice.lang === "en-US") || null;
+
+          // Event handlers
+          utterance.onstart = () => {
+            isSpeaking.set(true);
+            scale.set(1.2);
+          };
+          utterance.onend = () => {
+            isSpeaking.set(false);
+            scale.set(1);
+          };
+          utterance.onerror = (event) => {
+            console.error("Speech synthesis error:", event.error);
+          };
+
+          // Speak the text
+          speechSynthesis.speak(utterance);
+        } else if (isVoiceMode) {
+          const speakRes = await fetch("/api/speak", {
+            method: "POST",
+            body: createFormData(genRes.text, "text"),
+          }).then((r) => r.json());
+
+          lastAudioResponse = speakRes.res.audio_data;
+          return speakRes;
+        } else {
+          const speakRes = await fetch("/api/speak", {
+            method: "POST",
+            body: createFormData(genRes.text, "text"),
+          }).then((r) => r.json());
+          lastAudioResponse = speakRes.res.audio_data;
+        }
       } else {
         console.error("SpeechRecognition is not supported in this browser.");
         textToSpeak.set("Your browser does not support SpeechRecognition.");
       }
+    });
+  }
 
-      transcription = inferText;
-      transcriptionHistory = [
-        ...transcriptionHistory,
-        {
-          text: inferText,
-          timestamp: new Date(),
-          author: "user",
-        },
-      ];
+  async function processInput(input: string | Blob) {
+    const createFormData = (data: string | Blob, key: string) => {
+      const fd = new FormData();
+      fd.append(key, data);
+      return fd;
+    };
 
-      const genRes = await fetch("/api/gen", {
+    let inferText: string;
+
+    if (input instanceof Blob) {
+      const inferRes = await fetch("/api/infer", {
         method: "POST",
-        body: createFormData(inferText, "context"),
+        body: createFormData(input, "audio"),
       }).then((r) => r.json());
-
-      conversationResult = genRes.text;
-
-      transcriptionHistory = [
-        ...transcriptionHistory,
-        {
-          text: genRes.text,
-          timestamp: new Date(),
-          author: "miruhane",
-        },
-      ];
-
-      if (isVoiceMode && settings.getKeyValue("model-tts") === "browser") {
-        if (!("speechSynthesis" in window)) {
-          console.error("Speech synthesis is not supported in this browser.");
-          return;
-        }
-
-        const utterance = new SpeechSynthesisUtterance(genRes.text);
-
-        // Set language
-        utterance.lang = "en-US";
-
-        // Optional: Select a specific voice
-        const voices = speechSynthesis.getVoices();
-        utterance.voice = voices.find((voice) => voice.lang === "en-US") || null;
-
-        // Event handlers
-        utterance.onstart = () => {
-          isSpeaking.set(true);
-          scale.set(1.2);
-        };
-        utterance.onend = () => {
-          isSpeaking.set(false);
-          scale.set(1);
-        };
-        utterance.onerror = (event) => {
-          console.error("Speech synthesis error:", event.error);
-        };
-
-        // Speak the text
-        speechSynthesis.speak(utterance);
-      } else if (isVoiceMode) {
-        const speakRes = await fetch("/api/speak", {
-          method: "POST",
-          body: createFormData(genRes.text, "text"),
-        }).then((r) => r.json());
-
-        lastAudioResponse = speakRes.res.audio_data;
-        return speakRes;
-      } else {
-        const speakRes = await fetch("/api/speak", {
-          method: "POST",
-          body: createFormData(genRes.text, "text"),
-        }).then((r) => r.json());
-        lastAudioResponse = speakRes.res.audio_data;
-      }
+      inferText = inferRes.text;
+    } else {
+      inferText = input;
     }
-  );
 
-    
-  } else {
-    async function processInput(input: string | Blob) {
-      const createFormData = (data: string | Blob, key: string) => {
-        const fd = new FormData();
-        fd.append(key, data);
-        return fd;
+    transcription = inferText;
+    transcriptionHistory.update(history => [
+      ...history,
+      {
+        text: inferText,
+        timestamp: new Date(),
+        author: "user",
+      },
+    ]);
+
+    const genRes = await fetch("/api/gen", {
+      method: "POST",
+      body: createFormData(inferText, "context"),
+    }).then((r) => r.json());
+
+    conversationResult = genRes.text;
+
+    transcriptionHistory.update(history => [
+      ...history,
+      {
+        text: genRes.text,
+        timestamp: new Date(),
+        author: "miruhane",
+      },
+    ]);
+
+    if (isVoiceMode && settings.getKeyValue("model-tts") === "browser") {
+      if (!("speechSynthesis" in window)) {
+        console.error("Speech synthesis is not supported in this browser.");
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(genRes.text);
+
+      // Set language
+      utterance.lang = "en-US";
+
+      // Optional: Select a specific voice
+      const voices = speechSynthesis.getVoices();
+      utterance.voice = voices.find((voice) => voice.lang === "en-US") || null;
+
+      // Event handlers
+      utterance.onstart = () => {
+        isSpeaking.set(true);
+        scale.set(1.2);
+      };
+      utterance.onend = () => {
+        isSpeaking.set(false);
+        scale.set(1);
+      };
+      utterance.onerror = (event) => {
+        console.error("Speech synthesis error:", event.error);
       };
 
-      let inferText: string;
-
-      if (input instanceof Blob) {
-        const inferRes = await fetch("/api/infer", {
-          method: "POST",
-          body: createFormData(input, "audio"),
-        }).then((r) => r.json());
-        inferText = inferRes.text;
-      } else {
-        inferText = input;
-      }
-
-      transcription = inferText;
-      transcriptionHistory = [
-        ...transcriptionHistory,
-        {
-          text: inferText,
-          timestamp: new Date(),
-          author: "user",
-        },
-      ];
-
-      const genRes = await fetch("/api/gen", {
+      // Speak the text
+      speechSynthesis.speak(utterance);
+    } else if (isVoiceMode) {
+      const speakRes = await fetch("/api/speak", {
         method: "POST",
-        body: createFormData(inferText, "context"),
+        body: createFormData(genRes.text, "text"),
       }).then((r) => r.json());
 
-      conversationResult = genRes.text;
-
-      transcriptionHistory = [
-        ...transcriptionHistory,
-        {
-          text: genRes.text,
-          timestamp: new Date(),
-          author: "miruhane",
-        },
-      ];
-
-      if (isVoiceMode && settings.getKeyValue("model-tts") === "browser") {
-        if (!("speechSynthesis" in window)) {
-          console.error("Speech synthesis is not supported in this browser.");
-          return;
-        }
-
-        const utterance = new SpeechSynthesisUtterance(genRes.text);
-
-        // Set language
-        utterance.lang = "en-US";
-
-        // Optional: Select a specific voice
-        const voices = speechSynthesis.getVoices();
-        utterance.voice = voices.find((voice) => voice.lang === "en-US") || null;
-
-        // Event handlers
-        utterance.onstart = () => {
-          isSpeaking.set(true);
-          scale.set(1.2);
-        };
-        utterance.onend = () => {
-          isSpeaking.set(false);
-          scale.set(1);
-        };
-        utterance.onerror = (event) => {
-          console.error("Speech synthesis error:", event.error);
-        };
-
-        // Speak the text
-        speechSynthesis.speak(utterance);
-      } else if (isVoiceMode) {
-        const speakRes = await fetch("/api/speak", {
-          method: "POST",
-          body: createFormData(genRes.text, "text"),
-        }).then((r) => r.json());
-
-        lastAudioResponse = speakRes.res.audio_data;
-        return speakRes;
-      } else {
-        const speakRes = await fetch("/api/speak", {
-          method: "POST",
-          body: createFormData(genRes.text, "text"),
-        }).then((r) => r.json());
-        lastAudioResponse = speakRes.res.audio_data;
-      }
+      lastAudioResponse = speakRes.res.audio_data;
+      return speakRes;
+    } else {
+      const speakRes = await fetch("/api/speak", {
+        method: "POST",
+        body: createFormData(genRes.text, "text"),
+      }).then((r) => r.json());
+      lastAudioResponse = speakRes.res.audio_data;
     }
+  }
+
+  function createFormData(data: string | Blob, key: string) {
+    const fd = new FormData();
+    fd.append(key, data);
+    return fd;
   }
 
   async function replayLastAudio() {
@@ -448,110 +458,6 @@
 
     audioChunks = [];
   }
-
-  // Define writable stores with proper types
-  // const isSpeaking = writable<boolean>(false);
-  // const isRecording = writable<boolean>(false);
-  // const showSubtitles = writable<boolean>(true);
-  // const scale = writable<number>(1);
-  // const textToSpeak = writable<string>("Awaiting your input...");
-  // const userInput = writable<string>(""); // Stores user input (recorded or typed)
-  // const isLoading = writable<boolean>(false);
-
-  // // Define types for variables
-  // let speechRecognition: Window["SpeechRecognition"] | null = null;
-  // let shouldContinueRecording = false;
-
-  // const startRecording = (): void => {
-  //   if (speechRecognition && !get(isRecording)) {
-  //     console.log("Starting recording...");
-  //     isRecording.set(true);
-  //     shouldContinueRecording = true;
-  //     userInput.set(""); // Clear any previous input
-  //     speechRecognition.start();
-  //   }
-  // };
-
-  // const stopRecording = (): void => {
-  //   if (speechRecognition && get(isRecording)) {
-  //     console.log("Stopping recording...");
-  //     isRecording.set(false);
-  //     shouldContinueRecording = false;
-  //     speechRecognition.stop();
-  //   }
-  // };
-
-  // const handleSubmit = async (): Promise<void> => {
-  //   const query = get(userInput).trim();
-  //   if (query) {
-  //     console.log("Query sent to Gemini AI:", query);
-  //     const answer = await getGeminiAnswer(query);
-  //     textToSpeak.set(answer);
-  //     if (get(showSubtitles)) {
-  //       speak(answer);
-  //     }
-  //   }
-  // };
-
-  // const getGeminiAnswer = async (query: string): Promise<string> => {
-  //   const apiKey = "YOUR_GEMINI_API_KEY"; // Replace with your actual API key
-  //   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-  //   const requestBody = {
-  //     contents: [
-  //       {
-  //         parts: [{ text: query }],
-  //       },
-  //     ],
-  //   };
-
-  //   try {
-  //     isLoading.set(true); // Indicate loading state
-
-  //     const response = await fetch(apiUrl, {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify(requestBody), // Send the request payload
-  //     });
-
-  //     if (!response.ok) {
-  //       console.error("Error response from Gemini API:", response.statusText);
-  //       return `Error: ${response.statusText}`;
-  //     }
-
-  //     const data = await response.json();
-  //     isLoading.set(false); // Turn off loading state
-
-  //     // Log the raw API response for debugging
-  //     console.log("Raw API Response:", data);
-
-  //     // Safely extract and return the generated content
-  //     if (data?.candidates?.length > 0 && data.candidates[0]?.content?.parts?.[0]?.text) {
-  //       return data.candidates[0].content.parts[0].text; // Return the text generated by Gemini
-  //     } else {
-  //       return "No valid content found in the response.";
-  //     }
-  //   } catch (error) {
-  //     console.error("Error fetching from Gemini API:", error);
-  //     isLoading.set(false); // Turn off loading state
-  //     return "There was an error processing your request. Please try again.";
-  //   }
-  // };
-
-  // const speak = (text: string): void => {
-  //   const utterance = new SpeechSynthesisUtterance(text);
-  //   utterance.onstart = (): void => {
-  //     isSpeaking.set(true);
-  //     scale.set(1.2);
-  //   };
-  //   utterance.onend = (): void => {
-  //     isSpeaking.set(false);
-  //     scale.set(1);
-  //   };
-  //   speechSynthesis.speak(utterance);
-  // };
 </script>
 
 <svelte:head>
@@ -690,8 +596,8 @@
                   </Button.Root>
                 {/if}
 
-                {#if transcriptionHistory.length > 0}
-                  <InstantHistory bind:transcriptionHistory />
+                {#if $transcriptionHistory.length > 0}
+                  <InstantHistory transcriptionHistory={$transcriptionHistory} />
                 {/if}
               </div>
             {:else}
