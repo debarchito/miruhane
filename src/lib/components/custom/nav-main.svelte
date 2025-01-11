@@ -1,7 +1,8 @@
 <script lang="ts">
-  import * as Collapsible from "$lib/components/ui/collapsible/index.js";
+  import { history } from "$lib/runes.svelte.js";
+  import { ChevronRight, ArrowUpRight } from "lucide-svelte";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-  import ChevronRight from "lucide-svelte/icons/chevron-right";
+  import * as Collapsible from "$lib/components/ui/collapsible/index.js";
 
   let {
     items,
@@ -9,20 +10,16 @@
     items: {
       title: string;
       url: string;
-      // This should be `Component` after lucide-svelte updates types
+      // Icon can be anything, we don't care about it here
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       icon: any;
       isActive?: boolean;
-      items?: {
-        title: string;
-        url: string;
-      }[];
+      items?: typeof history.get;
     }[];
   } = $props();
 </script>
 
 <Sidebar.Group>
-  <Sidebar.GroupLabel>Platform</Sidebar.GroupLabel>
   <Sidebar.Menu>
     {#each items as mainItem (mainItem.title)}
       <Collapsible.Root open={mainItem.isActive}>
@@ -52,7 +49,8 @@
                 <Sidebar.MenuSub>
                   {#each mainItem.items as subItem (subItem.title)}
                     <Sidebar.MenuSubItem>
-                      <Sidebar.MenuSubButton href={subItem.url}>
+                      <Sidebar.MenuSubButton href="/history/{subItem.id}">
+                        <ArrowUpRight />
                         <span>{subItem.title}</span>
                       </Sidebar.MenuSubButton>
                     </Sidebar.MenuSubItem>

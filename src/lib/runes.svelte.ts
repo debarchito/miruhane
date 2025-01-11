@@ -26,3 +26,30 @@ export const settings = (function () {
     },
   };
 })();
+
+type History = {
+  id: string;
+  createdAt: Date;
+  userId: string;
+  updatedAt: Date;
+  title: string;
+};
+
+export const history = (function () {
+  let data = $state<History[]>([]);
+
+  return {
+    get get() {
+      return data;
+    },
+    add(newData: History) {
+      data = [...data, newData].slice(-5).reverse();
+    },
+    remove(historyId: string) {
+      data = data.filter(({ id }) => id !== historyId);
+    },
+    set(newData: History[]) {
+      data = newData;
+    },
+  };
+})();

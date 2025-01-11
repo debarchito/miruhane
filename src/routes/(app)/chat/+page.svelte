@@ -1,6 +1,6 @@
 <script lang="ts">
   import { toggleMode, mode } from "mode-watcher";
-  import { settings } from "$lib/runes.svelte.js";
+  import { settings, history } from "$lib/runes.svelte.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Toggle } from "$lib/components/ui/toggle/index.js";
   import * as Button from "$lib/components/ui/button/index.js";
@@ -11,6 +11,7 @@
   import { X, Play, Pause, Check, MessageSquare, Mic, Volume2, Sun, Moon } from "lucide-svelte";
 
   let { data } = $props();
+  history.set(data.history);
   settings.set(data.settings);
 
   let mediaRecorder: MediaRecorder;
@@ -308,12 +309,7 @@
 </svelte:head>
 
 <Sidebar.Provider>
-  <AppSidebar
-    username={data.user.username}
-    email={data.user.email}
-    settings={data.settings}
-    history={data.history}
-  />
+  <AppSidebar username={data.user.username} email={data.user.email} />
   <Sidebar.Inset>
     <header class="flex h-16 shrink-0 items-center gap-2">
       <div class="flex w-full items-center gap-2 px-4">

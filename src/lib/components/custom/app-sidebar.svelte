@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { settings } from "$lib/runes.svelte.js";
+  import { settings, history } from "$lib/runes.svelte.js";
   import NavMain from "$lib/components/custom/nav-main.svelte";
   import NavUser from "$lib/components/custom/nav-user.svelte";
   import * as Select from "$lib/components/ui/select/index.js";
@@ -20,15 +20,9 @@
   ];
   const contextModels = [{ value: "model:gemini-1.5-flash", label: "Gemini 1.5 Flash" }];
 
-  let sttModel = $state(
-    settings.get.find((s) => s.key === "model-stt")?.value ?? "model:whisper-base",
-  );
-  let ttsModel = $state(
-    settings.get.find((s) => s.key === "model-tts")?.value ?? "service:speechify",
-  );
-  let contextModel = $state(
-    settings.get.find((s) => s.key === "model-context")?.value ?? "model:gemini-1.5-flash",
-  );
+  let sttModel = $state(settings.getKeyValue("model-stt"));
+  let ttsModel = $state(settings.getKeyValue("model-tts"));
+  let contextModel = $state(settings.getKeyValue("model-context"));
   let hasChanges = $state(false);
 
   const sttTriggerContent = $derived(
@@ -68,11 +62,10 @@
         url: "/history",
         icon: History,
         isActive: true,
-        items: [...restProps.history],
+        items: history.get,
       },
     ],
   };
-  console.log(data.navMain);
 </script>
 
 <Sidebar.Root bind:ref variant="inset" {...restProps}>
