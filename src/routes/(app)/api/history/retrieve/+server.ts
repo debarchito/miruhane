@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { desc } from "drizzle-orm";
 import { db } from "$lib/server/db";
 import type { RequestHandler } from "./$types";
 
@@ -7,6 +8,9 @@ const headers = {
 };
 const requestSchema = z.object({
   historyId: z.string(),
+  cursor: z.string().datetime().nullable().optional(),
+  pageSize: z.number().int().min(1).max(20).default(5),
+  direction: z.enum(["next", "prev"]).default("next"),
 });
 
 export const GET: RequestHandler = async ({ locals, request }) => {
@@ -14,6 +18,7 @@ export const GET: RequestHandler = async ({ locals, request }) => {
     return new Response(
       JSON.stringify({
         res: null,
+        meta: null,
         status: 403,
         message: "Action not allowed",
       }),
@@ -24,16 +29,33 @@ export const GET: RequestHandler = async ({ locals, request }) => {
     );
   }
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch (err) {
+    console.error(err);
+    return new Response(
+      JSON.stringify({
+        res: null,
+        meta: null,
+        status: 400,
+        message: "Invalid JSON body",
+      }),
+      {
+        status: 400,
+        headers,
+      },
+    );
+  }
   const result = requestSchema.safeParse(body);
 
   if (!result.success) {
     return new Response(
       JSON.stringify({
         res: null,
+        meta: null,
         status: 400,
-        message: "Invalid request body",
-        errors: result.error.errors,
+        message: result.error.errors,
       }),
       {
         status: 400,
@@ -42,13 +64,22 @@ export const GET: RequestHandler = async ({ locals, request }) => {
     );
   }
 
-  const { historyId } = result.data;
+  const { historyId, cursor, pageSize, direction } = result.data;
 
   const res = await db.query.history.findFirst({
     where: (table, { eq, and }) =>
       and(eq(table.userId, locals.session!.userId), eq(table.id, historyId)),
     with: {
-      chatEntries: true,
+      chatEntries: {
+        limit: pageSize + 1,
+        where: cursor
+          ? (fields, { lt, gt }) =>
+              direction === "next"
+                ? lt(fields.createdAt, new Date(cursor))
+                : gt(fields.createdAt, new Date(cursor))
+          : undefined,
+        orderBy: (fields) => (direction === "next" ? [desc(fields.createdAt)] : [fields.createdAt]),
+      },
     },
   });
 
@@ -56,6 +87,7 @@ export const GET: RequestHandler = async ({ locals, request }) => {
     return new Response(
       JSON.stringify({
         res: null,
+        meta: null,
         status: 404,
         message: "History not found",
       }),
@@ -66,9 +98,19 @@ export const GET: RequestHandler = async ({ locals, request }) => {
     );
   }
 
+  const hasMore = res.chatEntries.length > pageSize;
+  const entries = hasMore ? res.chatEntries.slice(0, -1) : res.chatEntries;
+  const nextCursor = hasMore ? entries[entries.length - 1].createdAt : null;
+
   return new Response(
     JSON.stringify({
-      res,
+      res: { ...res, chatEntries: entries },
+      meta: {
+        count: entries.length,
+        hasMore,
+        nextCursor,
+        pageSize,
+      },
       status: 200,
       message: "History retrieved",
     }),

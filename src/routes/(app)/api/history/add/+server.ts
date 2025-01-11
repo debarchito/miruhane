@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { db } from "$lib/server/db";
 import type { RequestHandler } from "./$types";
-import { chatEntry } from "$lib/server/db/schema";
 import { generateToken } from "$lib/server/auth";
+import { chatEntry } from "$lib/server/db/schema";
 
 const headers = {
   "Content-Type": "application/json",
@@ -28,16 +28,15 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     );
   }
 
-  let requestData;
-
+  let body;
   try {
-    requestData = await request.json();
-  } catch (e) {
-    console.error(e);
+    body = await request.json();
+  } catch (err) {
+    console.error(err);
     return new Response(
       JSON.stringify({
         status: 400,
-        message: "Invalid request body format",
+        message: "Invalid JSON body",
       }),
       {
         status: 400,
@@ -45,8 +44,8 @@ export const POST: RequestHandler = async ({ locals, request }) => {
       },
     );
   }
+  const result = requestSchema.safeParse(body);
 
-  const result = requestSchema.safeParse(requestData);
   if (!result.success) {
     return new Response(
       JSON.stringify({
