@@ -145,13 +145,14 @@
   function pauseRecording() {
     if (currentAudio) {
       isAudioPaused = !isAudioPaused;
-      isPaused = !isPaused;
-      if (!isAudioPaused) {
-        currentAudio.currentTime = audioCurrentTime;
-        currentAudio.play();
-      } else {
+      if (isAudioPaused) {
+        isPaused = true;
         audioCurrentTime = currentAudio.currentTime;
         currentAudio.pause();
+      } else {
+        isPaused = false;
+        currentAudio.currentTime = audioCurrentTime;
+        currentAudio.play();
       }
       return;
     }
@@ -223,39 +224,63 @@
       },
     ];
 
-    if (isVoiceMode) {
-      if (settings.getKeyValue("model-tts") === "browser" && synthesis) {
-        const utterance = new SpeechSynthesisUtterance(genRes.text);
-        synthesis.speak(utterance);
-      } else {
-        const speakRes = await fetch("/api/speak", {
-          method: "POST",
-          body: createFormData(genRes.text, "text"),
-        }).then((r) => r.json());
-
-        const blob = new Blob(
-          [Uint8Array.from(atob(speakRes.res.audio_data), (c) => c.charCodeAt(0))],
-          {
-            type: "audio/aac",
-          },
-        );
-        const audio = new Audio(URL.createObjectURL(blob));
-        currentAudio = audio;
-        isAudioPaused = false;
-        isPaused = false;
-        await new Promise<void>((resolve) => {
-          if (audio) {
-            audio.onended = () => {
-              currentAudio = null;
-              audioCurrentTime = 0;
-              isAudioPaused = false;
-              isPaused = false;
-              resolve();
-            };
-            void audio.play();
+    // Narrate response for both voice and text modes
+    if (settings.getKeyValue("model-tts") === "browser" && synthesis) {
+      const utterance = new SpeechSynthesisUtterance(genRes.text);
+      utterance.onend = () => {
+        if (isVoiceMode) {
+          if (settings.getKeyValue("model-stt") === "browser" && recognition) {
+            recognition.start();
+            isPaused = false;
+          } else if (mediaRecorder && mediaRecorder.state === "paused") {
+            mediaRecorder.resume();
+            isPaused = false;
           }
-        });
+        }
+      };
+      synthesis.speak(utterance);
+    } else {
+      const speakRes = await fetch("/api/speak", {
+        method: "POST",
+        body: createFormData(genRes.text, "text"),
+      }).then((r) => r.json());
+
+      const blob = new Blob(
+        [Uint8Array.from(atob(speakRes.res.audio_data), (c) => c.charCodeAt(0))],
+        {
+          type: "audio/aac",
+        },
+      );
+      const audio = new Audio(URL.createObjectURL(blob));
+      currentAudio = audio;
+      isAudioPaused = false;
+      isPaused = false; // Changed: Don't set isPaused to true initially
+      if (isVoiceMode) {
+        if (settings.getKeyValue("model-stt") === "browser" && recognition) {
+          recognition.stop();
+        } else if (mediaRecorder && mediaRecorder.state === "recording") {
+          mediaRecorder.pause();
+        }
       }
+      await new Promise<void>((resolve) => {
+        if (audio) {
+          audio.onended = () => {
+            currentAudio = null;
+            audioCurrentTime = 0;
+            isAudioPaused = false;
+            isPaused = false;
+            if (isVoiceMode) {
+              if (settings.getKeyValue("model-stt") === "browser" && recognition) {
+                recognition.start();
+              } else if (mediaRecorder && mediaRecorder.state === "paused") {
+                mediaRecorder.resume();
+              }
+            }
+            resolve();
+          };
+          void audio.play();
+        }
+      });
     }
   }
 
@@ -421,10 +446,10 @@
                     onclick={pauseRecording}
                     class="transition-all hover:scale-105 active:scale-95"
                   >
-                    {#if isPaused || isAudioPaused}
-                      <Play class="h-4 w-4" />
-                    {:else}
+                    {#if !isPaused && !isAudioPaused}
                       <Pause class="h-4 w-4" />
+                    {:else}
+                      <Play class="h-4 w-4" />
                     {/if}
                   </Button.Root>
 

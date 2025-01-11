@@ -5,6 +5,11 @@ declare global {
       session: import("$lib/server/auth").SessionValidationResult["session"];
     }
   }
+
+  interface Window {
+    SpeechRecognition: unknown;
+    webkitSpeechRecognition: unknown;
+  }
 }
 
 export {};
