@@ -16,6 +16,8 @@
 
   let recognition: any = $state(null);
   let synthesis: SpeechSynthesis | null = $state(null);
+  let currentHistoryId: string | null = $state(null);
+  let isFirstMessage = $state(true);
 
   // Initialize Web Speech API if available
   $effect(() => {
@@ -96,6 +98,7 @@
 
   async function startConversation() {
     hasStarted = true;
+    isFirstMessage = true;
     void startRecording();
   }
 
@@ -133,6 +136,8 @@
       audioChunks = [];
       audioCurrentTime = 0;
       messageText = "";
+      isFirstMessage = true;
+      currentHistoryId = null;
       if (currentAudio) {
         currentAudio.pause();
         currentAudio = null;
@@ -212,6 +217,26 @@
     }
 
     transcription = inferText;
+
+    if (isFirstMessage) {
+      const historyRes = await fetch("/api/history/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: inferText,
+        }),
+      });
+
+      if (historyRes.status === 200) {
+        const json = await historyRes.json();
+        currentHistoryId = json.res.id;
+        history.add(json);
+        isFirstMessage = false;
+      }
+    }
+
     transcriptionHistory = [
       ...transcriptionHistory,
       {
@@ -221,12 +246,42 @@
       },
     ];
 
+    if (currentHistoryId) {
+      await fetch("/api/history/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          historyId: currentHistoryId,
+          content: inferText,
+          role: "user",
+          createdAt: new Date(),
+        }),
+      });
+    }
+
     const genRes = await fetch("/api/gen", {
       method: "POST",
       body: createFormData(inferText, "context"),
-    }).then((r) => r.json());
+    }).then((res) => res.json());
 
     conversationResult = genRes.text;
+
+    if (currentHistoryId) {
+      await fetch("/api/history/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          historyId: currentHistoryId,
+          content: genRes.text,
+          role: "miruhane",
+          createdAt: new Date(),
+        }),
+      });
+    }
 
     transcriptionHistory = [
       ...transcriptionHistory,

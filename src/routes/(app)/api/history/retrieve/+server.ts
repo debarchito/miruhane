@@ -13,7 +13,7 @@ const requestSchema = z.object({
   direction: z.enum(["next", "prev"]).default("next"),
 });
 
-export const GET: RequestHandler = async ({ locals, request }) => {
+export const POST: RequestHandler = async ({ locals, request }) => {
   if (!locals.session) {
     return new Response(
       JSON.stringify({
