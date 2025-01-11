@@ -22,7 +22,7 @@
     if (typeof window !== "undefined") {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognition) {
-        const recognitionInstance = new SpeechRecognition();
+        const recognitionInstance = new (SpeechRecognition as any)();
         recognitionInstance.continuous = true;
         recognitionInstance.interimResults = true;
         let lastResult = "";
@@ -77,9 +77,11 @@
         if (settings.getKeyValue("model-stt") === "browser" && recognition) {
           recognition.stop();
         } else if (mediaRecorder?.state !== "inactive") {
-          mediaRecorder.requestData();
-          mediaRecorder.stop();
-          mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+          if (mediaRecorder) {
+            mediaRecorder.requestData();
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+          }
         }
         mediaRecorder = null;
         audioChunks = [];
