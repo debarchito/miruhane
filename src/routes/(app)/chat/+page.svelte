@@ -8,18 +8,37 @@
   import { Textarea } from "$lib/components/ui/textarea/index.js";
   import AppSidebar from "$lib/components/custom/app-sidebar.svelte";
   import InstantHistory from "$lib/components/custom/instant-history.svelte";
-  import { X, Play, Pause, Check, MessageSquare, Mic, Volume2, Sun, Moon } from "lucide-svelte";
+  import { X, Play, Pause, Check, MessageSquare, Mic, Sun, Moon } from "lucide-svelte";
 
   let { data } = $props();
   history.set(data.history);
   settings.set(data.settings);
 
-  let mediaRecorder: MediaRecorder;
-  // eslint-disable-next-line
-  let audioChunks: BlobPart[] = [];
-  let defaultTimer = 30;
-  let timer = $state(defaultTimer);
-  let timerInterval: ReturnType<typeof setInterval>;
+  let recognition: SpeechRecognition | null = $state(null);
+  let synthesis: SpeechSynthesis | null = $state(null);
+
+  // Initialize Web Speech API if available
+  $effect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognitionInstance = new SpeechRecognition();
+        recognitionInstance.continuous = true;
+        recognitionInstance.interimResults = true;
+        recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
+          transcription = Array.from(event.results)
+            .map((result) => result[0].transcript)
+            .join("");
+        };
+        recognition = recognitionInstance;
+      }
+
+      synthesis = window.speechSynthesis;
+    }
+  });
+
+  let mediaRecorder: MediaRecorder | null = null;
+  let audioChunks: Array<Blob> = [];
   let hasStarted = $state(false);
   let isPaused = $state(false);
   let isLoading = $state(false);
@@ -32,11 +51,12 @@
   let isAudioPaused = $state(false);
   let messageText = $state("");
   let isVoiceMode = $state(true);
-  let lastAudioResponse = $state<string | null>(null);
-  // eslint-disable-next-line
-  let showStartButton = $state(true);
 
   async function initMediaRecorder() {
+    if (settings.getKeyValue("model-stt") === "browser") {
+      return null;
+    }
+
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const recorder = new MediaRecorder(stream, {
       mimeType: "audio/webm;codecs=opus",
@@ -47,26 +67,14 @@
     return recorder;
   }
 
-  function startTimer() {
-    timer = defaultTimer;
-    return setInterval(() => {
-      if (!isPaused && !isAudioPaused && isVoiceMode) {
-        timer--;
-        if (timer <= 0) {
-          void stopRecording(true);
-          timer = defaultTimer;
-        }
-      }
-    }, 1000);
-  }
-
   async function toggleInputMode() {
     if (isVoiceMode) {
-      if (mediaRecorder?.state !== "inactive") {
+      if (settings.getKeyValue("model-stt") === "browser" && recognition) {
+        recognition.stop();
+      } else if (mediaRecorder?.state !== "inactive") {
         await stopRecording(false);
       }
       mediaRecorder?.stream?.getTracks().forEach((track) => track.stop());
-      clearInterval(timerInterval);
     } else {
       void startRecording();
     }
@@ -74,23 +82,27 @@
   }
 
   async function startConversation() {
-    showStartButton = false;
     hasStarted = true;
     void startRecording();
   }
 
   async function startRecording() {
     try {
-      mediaRecorder = await initMediaRecorder();
-      audioChunks = [];
-      mediaRecorder.start(100);
+      if (settings.getKeyValue("model-stt") === "browser") {
+        if (recognition) {
+          recognition.start();
+        }
+      } else {
+        mediaRecorder = await initMediaRecorder();
+        if (mediaRecorder) {
+          audioChunks = [];
+          mediaRecorder.start(100);
+        }
+      }
       hasStarted = true;
       isPaused = false;
       isAudioPaused = false;
       toRunNextStage = false;
-      if (isVoiceMode) {
-        timerInterval = startTimer();
-      }
     } catch (err) {
       console.error("Failed to start recording:", err);
     }
@@ -106,25 +118,26 @@
       isLoading = false;
       toRunNextStage = false;
       audioChunks = [];
-      timer = defaultTimer;
       audioCurrentTime = 0;
       messageText = "";
-      showStartButton = true;
-      lastAudioResponse = null;
       if (currentAudio) {
         currentAudio.pause();
         currentAudio = null;
       }
-    };
-
-    const stopMediaRecorder = () => {
-      if (mediaRecorder?.state !== "inactive") {
-        mediaRecorder.stop();
-        mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+      if (synthesis && synthesis.speaking) {
+        synthesis.cancel();
       }
     };
 
-    clearInterval(timerInterval);
+    const stopMediaRecorder = () => {
+      if (settings.getKeyValue("model-stt") === "browser" && recognition) {
+        recognition.stop();
+      } else if (mediaRecorder?.state !== "inactive") {
+        mediaRecorder!.stop();
+        mediaRecorder!.stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+
     resetStateValues();
     stopMediaRecorder();
   }
@@ -143,20 +156,26 @@
       return;
     }
 
+    if (settings.getKeyValue("model-stt") === "browser" && recognition) {
+      if (!isPaused) {
+        recognition.stop();
+      } else {
+        recognition.start();
+      }
+      isPaused = !isPaused;
+      return;
+    }
+
     if (!mediaRecorder) return;
 
-    const togglePause = () => {
-      if (mediaRecorder.state === "recording") {
-        mediaRecorder.requestData();
-        mediaRecorder.pause();
-        isPaused = true;
-      } else if (mediaRecorder.state === "paused") {
-        mediaRecorder.resume();
-        isPaused = false;
-      }
-    };
-
-    togglePause();
+    if (mediaRecorder.state === "recording") {
+      mediaRecorder.requestData();
+      mediaRecorder.pause();
+      isPaused = true;
+    } else if (mediaRecorder.state === "paused") {
+      mediaRecorder.resume();
+      isPaused = false;
+    }
   }
 
   async function processInput(input: string | Blob) {
@@ -168,14 +187,14 @@
 
     let inferText: string;
 
-    if (input instanceof Blob) {
+    if (input instanceof Blob && settings.getKeyValue("model-stt") !== "browser") {
       const inferRes = await fetch("/api/infer", {
         method: "POST",
         body: createFormData(input, "audio"),
       }).then((r) => r.json());
       inferText = inferRes.text;
     } else {
-      inferText = input;
+      inferText = input instanceof Blob ? transcription : input;
     }
 
     transcription = inferText;
@@ -205,55 +224,51 @@
     ];
 
     if (isVoiceMode) {
-      const speakRes = await fetch("/api/speak", {
-        method: "POST",
-        body: createFormData(genRes.text, "text"),
-      }).then((r) => r.json());
+      if (settings.getKeyValue("model-tts") === "browser" && synthesis) {
+        const utterance = new SpeechSynthesisUtterance(genRes.text);
+        synthesis.speak(utterance);
+      } else {
+        const speakRes = await fetch("/api/speak", {
+          method: "POST",
+          body: createFormData(genRes.text, "text"),
+        }).then((r) => r.json());
 
-      lastAudioResponse = speakRes.res.audio_data;
-      return speakRes;
-    } else {
-      const speakRes = await fetch("/api/speak", {
-        method: "POST",
-        body: createFormData(genRes.text, "text"),
-      }).then((r) => r.json());
-      lastAudioResponse = speakRes.res.audio_data;
-    }
-  }
-
-  async function replayLastAudio() {
-    if (lastAudioResponse) {
-      await playAudioResponse(lastAudioResponse);
-    }
-  }
-
-  async function playAudioResponse(audioData: string) {
-    const blob = new Blob([Uint8Array.from(atob(audioData), (c) => c.charCodeAt(0))], {
-      type: "audio/aac",
-    });
-    const audio = new Audio(URL.createObjectURL(blob));
-    currentAudio = audio;
-    isAudioPaused = false;
-    isPaused = false;
-    await new Promise((resolve) => {
-      audio.onended = () => {
-        currentAudio = null;
-        audioCurrentTime = 0;
+        const blob = new Blob(
+          [Uint8Array.from(atob(speakRes.res.audio_data), (c) => c.charCodeAt(0))],
+          {
+            type: "audio/aac",
+          },
+        );
+        const audio = new Audio(URL.createObjectURL(blob));
+        currentAudio = audio;
         isAudioPaused = false;
         isPaused = false;
-        resolve(null);
-      };
-      void audio.play();
-    });
+        await new Promise<void>((resolve) => {
+          if (audio) {
+            audio.onended = () => {
+              currentAudio = null;
+              audioCurrentTime = 0;
+              isAudioPaused = false;
+              isPaused = false;
+              resolve();
+            };
+            void audio.play();
+          }
+        });
+      }
+    }
   }
 
   async function handleInput() {
     isLoading = true;
     try {
       if (isVoiceMode) {
-        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-        const speakRes = await processInput(audioBlob);
-        await playAudioResponse(speakRes.res.audio_data);
+        if (settings.getKeyValue("model-stt") === "browser") {
+          await processInput(transcription);
+        } else {
+          const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+          await processInput(audioBlob);
+        }
       } else {
         if (!messageText.trim()) return;
         transcription = messageText;
@@ -274,22 +289,25 @@
 
   async function stopRecording(shouldProcess = true) {
     const stopMediaRecorderAndTracks = async () => {
-      if (mediaRecorder.state === "recording") {
+      if (settings.getKeyValue("model-stt") === "browser" && recognition) {
+        recognition.stop();
+      } else if (mediaRecorder?.state === "recording") {
         mediaRecorder.requestData();
+        mediaRecorder.stop();
+        await new Promise((resolve) => {
+          mediaRecorder!.addEventListener("stop", resolve, { once: true });
+        });
+        mediaRecorder.stream.getTracks().forEach((track) => track.stop());
       }
-      mediaRecorder.stop();
-      await new Promise((resolve) => {
-        mediaRecorder.addEventListener("stop", resolve, { once: true });
-      });
-      mediaRecorder.stream.getTracks().forEach((track) => track.stop());
     };
 
-    if (!mediaRecorder || !["recording", "paused"].includes(mediaRecorder.state)) {
+    if (
+      (!mediaRecorder || !["recording", "paused"].includes(mediaRecorder.state)) &&
+      !recognition
+    ) {
       return;
     }
 
-    clearInterval(timerInterval);
-    timer = defaultTimer;
     await stopMediaRecorderAndTracks();
 
     if (shouldProcess) {
@@ -373,11 +391,6 @@
                   ></div>
                 </div>
               </div>
-              {#if hasStarted && !isPaused && isVoiceMode}
-                <div class="absolute inset-0 flex items-center justify-center">
-                  <span class="text-xl font-bold text-primary drop-shadow-lg">{timer}s</span>
-                </div>
-              {/if}
             </div>
 
             {#if hasStarted}
@@ -566,19 +579,9 @@
                   ></div>
                   <Card.Header class="relative z-10">
                     <Card.Title
-                      class="mb-2 flex items-center gap-2 text-sm font-medium uppercase tracking-wide text-primary/90"
+                      class="mb-2 text-sm font-medium uppercase tracking-wide text-primary/90"
                     >
                       Response
-                      {#if lastAudioResponse}
-                        <Button.Root
-                          variant="ghost"
-                          size="icon"
-                          onclick={replayLastAudio}
-                          class="-my-1 transition-all hover:scale-105 active:scale-95"
-                        >
-                          <Volume2 class="h-4 w-4" />
-                        </Button.Root>
-                      {/if}
                     </Card.Title>
                     <Card.Description>
                       <div
