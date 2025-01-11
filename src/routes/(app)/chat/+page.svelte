@@ -14,7 +14,7 @@
   history.set(data.history);
   settings.set(data.settings);
 
-  let recognition: SpeechRecognition | null = $state(null);
+  let recognition: any = $state(null);
   let synthesis: SpeechSynthesis | null = $state(null);
 
   // Initialize Web Speech API if available
@@ -25,10 +25,14 @@
         const recognitionInstance = new SpeechRecognition();
         recognitionInstance.continuous = true;
         recognitionInstance.interimResults = true;
-        recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
-          transcription = Array.from(event.results)
-            .map((result) => result[0].transcript)
-            .join("");
+        let lastResult = "";
+        recognitionInstance.onresult = (event: any) => {
+          const results = Array.from(event.results);
+          const transcript = results.map((result: any) => result[0].transcript).join("");
+          if (transcript !== lastResult) {
+            transcription = transcript;
+            lastResult = transcript;
+          }
         };
         recognition = recognitionInstance;
       }
@@ -68,17 +72,26 @@
   }
 
   async function toggleInputMode() {
-    if (isVoiceMode) {
-      if (settings.getKeyValue("model-stt") === "browser" && recognition) {
-        recognition.stop();
-      } else if (mediaRecorder?.state !== "inactive") {
-        await stopRecording(false);
+    const cleanupCurrentMode = async () => {
+      if (isVoiceMode) {
+        if (settings.getKeyValue("model-stt") === "browser" && recognition) {
+          recognition.stop();
+        } else if (mediaRecorder?.state !== "inactive") {
+          mediaRecorder.requestData();
+          mediaRecorder.stop();
+          mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+        }
+        mediaRecorder = null;
+        audioChunks = [];
       }
-      mediaRecorder?.stream?.getTracks().forEach((track) => track.stop());
-    } else {
-      void startRecording();
-    }
+    };
+
+    await cleanupCurrentMode();
     isVoiceMode = !isVoiceMode;
+
+    if (isVoiceMode) {
+      await startRecording();
+    }
   }
 
   async function startConversation() {
@@ -224,7 +237,6 @@
       },
     ];
 
-    // Narrate response for both voice and text modes
     if (settings.getKeyValue("model-tts") === "browser" && synthesis) {
       const utterance = new SpeechSynthesisUtterance(genRes.text);
       utterance.onend = () => {
@@ -254,7 +266,7 @@
       const audio = new Audio(URL.createObjectURL(blob));
       currentAudio = audio;
       isAudioPaused = false;
-      isPaused = false; // Changed: Don't set isPaused to true initially
+      isPaused = false;
       if (isVoiceMode) {
         if (settings.getKeyValue("model-stt") === "browser" && recognition) {
           recognition.stop();
