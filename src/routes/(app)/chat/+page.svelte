@@ -91,7 +91,7 @@
   };
 
   const getGeminiAnswer = async (query: string): Promise<string> => {
-    const apiKey = "YOUR_GEMINI_API_KEY"; // Replace with your actual API key
+    const apiKey = "AIzaSyA__NBSkwKMipTB2FC73GzYePOkur2Rt1w"; // Replace with your actual API key
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const requestBody = {
@@ -154,16 +154,16 @@
 <Sidebar.Provider>
   <AppSidebar />
   <Sidebar.Inset>
-    <header class="flex h-16 shrink-0 items-center gap-2">
-      <div class="flex items-center gap-2 px-4">
-        <Sidebar.Trigger class="-ml-1" />
-        <Separator orientation="vertical" class="mr-2 h-4" />
+    <header class="header">
+      <div class="header-content">
+        <Sidebar.Trigger class="sidebar-trigger" />
+        <Separator orientation="vertical" class="separator" />
         <Breadcrumb.Root>
           <Breadcrumb.List>
-            <Breadcrumb.Item class="hidden md:block">
-              <Breadcrumb.Link href="#">AI Interface</Breadcrumb.Link>
+            <Breadcrumb.Item>
+              <Breadcrumb.Link href="#" class="breadcrumb-link">AI Dashboard</Breadcrumb.Link>
             </Breadcrumb.Item>
-            <Breadcrumb.Separator class="hidden md:block" />
+            <Breadcrumb.Separator />
             <Breadcrumb.Item>
               <Breadcrumb.Page>Visualizer</Breadcrumb.Page>
             </Breadcrumb.Item>
@@ -171,112 +171,240 @@
         </Breadcrumb.Root>
       </div>
     </header>
-    <div class="page-wrapper">
-      <div class="visualizer" aria-hidden="true" style="transform: scale({$scale});">
-        <div class="center-circle"></div>
+
+    <main class="main-container">
+      <!-- Visualizer Section -->
+      <div class="visualizer-container">
+        <div class="outer-ring">
+          <div class="inner-ring">
+            <div class="pulse"></div>
+          </div>
+        </div>
       </div>
 
-      <div class="input-container">
+      <!-- Input Section -->
+      <div class="input-section">
         <button
           onclick={$isRecording ? stopRecording : startRecording}
-          class="rounded-full p-2 text-white shadow-md hover:bg-opacity-90"
-          style="background-color: {$isRecording ? 'red' : '#4f46e5'};"
+          class="record-button"
+          style="background-color: {$isRecording ? '#ff4d4d' : '#4CAF50'};"
         >
           {#if $isRecording}
-            <MicOff />
+            <MicOff class="icon" />
           {:else}
-            <Mic />
+            <Mic class="icon" />
           {/if}
         </button>
         <input
           type="text"
-          class="flex-1 rounded-lg border-gray-300 px-4 py-2 shadow-md"
+          class="query-input"
           placeholder="Type your query..."
           bind:value={$userInput}
         />
-        <button
-          onclick={handleSubmit}
-          class="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white shadow-md hover:bg-green-700"
-          disabled={$isRecording}
-        >
-          <Send /> Send
+        <button onclick={handleSubmit} class="send-button" disabled={$isRecording}>
+          <Send class="icon" /> Send
         </button>
       </div>
 
+      <!-- Subtitles -->
       {#if $showSubtitles}
-        <div class="subtitles mt-4 text-lg text-white">
-          <p>{$isLoading ? "Loading..." : $textToSpeak}</p>
+        <div class="subtitles">
+          <p>{$isLoading ? "Processing..." : $textToSpeak}</p>
         </div>
       {/if}
-    </div>
+    </main>
   </Sidebar.Inset>
 </Sidebar.Provider>
 
 <style>
-  .page-wrapper {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    height: 85vh;
-    padding: 20px;
+  /* General Reset */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
   }
 
-  .visualizer {
+  body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(to bottom, #0f172a, #1e293b);
+    color: #e2e8f0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Header */
+  .header {
+    height: 70px;
+    background: #1e293b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 90%;
+    max-width: 1200px;
+  }
+
+  .breadcrumb-link {
+    color: #a5b4fc;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+  }
+
+  .breadcrumb-link:hover {
+    color: #818cf8;
+  }
+
+  /* Main Container */
+  .main-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    height: calc(100vh - 70px);
+    padding: 20px;
+    text-align: center;
+  }
+
+  /* Visualizer */
+  .visualizer-container {
     position: relative;
     width: 300px;
     height: 300px;
     display: flex;
     justify-content: center;
     align-items: center;
-    border-radius: 50%;
-    background: radial-gradient(circle, #1f2937, #4c1d95);
-    box-shadow: 0 0 30px rgba(76, 29, 149, 0.8);
-    transition: transform 0.5s ease-in-out;
-    margin-bottom: 20px;
   }
 
-  .center-circle {
+  .outer-ring {
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: conic-gradient(#4caf50, #4f46e5, #1e40af, #4caf50);
+    animation: rotate 4s linear infinite;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 30px rgba(79, 70, 229, 0.6);
+  }
+
+  @keyframes rotate {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .inner-ring {
+    width: 250px;
+    height: 250px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #1e293b, #0f172a);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
+  }
+
+  .pulse {
     width: 100px;
     height: 100px;
-    background: linear-gradient(135deg, #ffffff, #7c3aed);
+    background: radial-gradient(circle, #ffffff, #818cf8);
     border-radius: 50%;
-    animation: pulse 2s infinite ease-in-out;
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
   }
 
   @keyframes pulse {
-    0%,
-    100% {
+    0%, 100% {
       transform: scale(1);
     }
     50% {
-      transform: scale(1.05);
+      transform: scale(1.1);
     }
   }
 
-  .subtitles {
-    text-align: center;
-    font-style: italic;
-    color: rgba(255, 255, 255, 0.8);
+  /* Input Section */
+  .input-section {
+    display: flex;
+    gap: 15px;
+    width: 100%;
+    max-width: 600px;
   }
 
-  .input-container {
+  .record-button {
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .record-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .query-input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 1rem;
+    box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.1);
+    transition: border 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .query-input:focus {
+    border-color: #4caf50;
+    box-shadow: 0px 0px 10px rgba(79, 70, 229, 0.6);
+    outline: none;
+  }
+
+  .send-button {
+    padding: 12px 20px;
+    background-color: #4caf50;
+    color: white;
+    font-size: 1rem;
+    border: none;
+    border-radius: 8px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-top: auto;
-    position: sticky;
-    bottom: 0;
+    gap: 8px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
   }
 
-  input {
-    flex: 1;
-    padding: 10px;
-    border-radius: 10px;
-    border: 1px solid #ccc;
+  .send-button:hover {
+    background-color: #45a049;
+    transform: scale(1.05);
   }
 
-  button {
-    cursor: pointer;
+  .icon {
+    font-size: 1.5rem;
+  }
+
+  /* Subtitles */
+  .subtitles {
+    margin-top: 20px;
+    font-size: 1.2rem;
+    font-style: italic;
+    color: #9ca3af;
   }
 </style>
