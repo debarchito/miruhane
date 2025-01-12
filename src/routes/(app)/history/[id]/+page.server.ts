@@ -46,6 +46,10 @@ export const load: PageServerLoad = async ({ locals, params, fetch }) => {
 
   const res: Response = await body.json();
 
+  if (!res.res) {
+    return redirect(302, "/history");
+  }
+
   return {
     user: locals.user!,
     session: locals.session,

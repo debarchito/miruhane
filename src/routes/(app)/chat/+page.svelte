@@ -1,14 +1,26 @@
 <script lang="ts">
+  import { toast } from "svelte-sonner";
   import { toggleMode, mode } from "mode-watcher";
   import { settings, history } from "$lib/runes.svelte.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Toggle } from "$lib/components/ui/toggle/index.js";
+  import { Toaster } from "$lib/components/ui/sonner/index.js";
   import * as Button from "$lib/components/ui/button/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
   import AppSidebar from "$lib/components/custom/app-sidebar.svelte";
   import InstantHistory from "$lib/components/custom/instant-history.svelte";
-  import { X, Play, Pause, Check, MessageSquare, Mic, Sun, Moon } from "lucide-svelte";
+  import {
+    X,
+    Play,
+    Pause,
+    Check,
+    MessageSquare,
+    Mic,
+    Sun,
+    Moon,
+    MessageSquareWarning,
+  } from "lucide-svelte";
 
   let { data } = $props();
   history.set(data.history);
@@ -25,12 +37,16 @@
     if (typeof window !== "undefined") {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognition) {
+        // eslint-disable-next-line
+        // @ts-ignore
         const recognitionInstance = new SpeechRecognition();
         recognitionInstance.continuous = true;
         recognitionInstance.interimResults = true;
         let lastResult = "";
+        // eslint-disable-next-line
         recognitionInstance.onresult = (event: any) => {
           const results = Array.from(event.results);
+          // eslint-disable-next-line
           const transcript = results.map((result: any) => result[0].transcript).join("");
           if (transcript !== lastResult) {
             transcription = transcript;
@@ -81,9 +97,9 @@
         if (settings.getKeyValue("model-stt") === "browser" && recognition) {
           recognition.stop();
         } else if (mediaRecorder?.state !== "inactive") {
-          mediaRecorder.requestData();
-          mediaRecorder.stop();
-          mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+          mediaRecorder!.requestData();
+          mediaRecorder!.stop();
+          mediaRecorder!.stream.getTracks().forEach((track) => track.stop());
         }
         mediaRecorder = null;
         audioChunks = [];
@@ -108,7 +124,18 @@
     try {
       if (settings.getKeyValue("model-stt") === "browser") {
         if (recognition) {
-          recognition.start();
+          try {
+            const state = recognition.state || recognition.recognitionState;
+            if (state !== "running") {
+              recognition.start();
+            }
+          } catch (e) {
+            // eslint-disable-next-line
+            // @ts-ignore
+            if (!e.message.includes("already started")) {
+              throw e;
+            }
+          }
         }
       } else {
         mediaRecorder = await initMediaRecorder();
@@ -122,7 +149,13 @@
       isAudioPaused = false;
       toRunNextStage = false;
     } catch (err) {
-      console.error("Failed to start recording:", err);
+      console.error(err);
+      toast("Failed to start recording", {
+        // eslint-disable-next-line
+        // @ts-ignore
+        description: err.message,
+        icon: MessageSquareWarning,
+      });
     }
   }
 
@@ -181,7 +214,15 @@
       if (!isPaused) {
         recognition.stop();
       } else {
-        recognition.start();
+        try {
+          recognition.start();
+        } catch (e) {
+          // eslint-disable-next-line
+          // @ts-ignore
+          if (!e.message.includes("already started")) {
+            throw e;
+          }
+        }
       }
       isPaused = !isPaused;
       return;
@@ -216,7 +257,17 @@
         body: createFormData({
           audio: input,
         }),
-      }).then((r) => r.json());
+      })
+        .then((r) => r.json())
+        .catch((err) => {
+          console.error(err);
+          toast("Failed processing audio", {
+            // eslint-disable-next-line
+            // @ts-ignore
+            description: err.message,
+            icon: MessageSquareWarning,
+          });
+        });
       inferText = inferRes.text;
     } else {
       inferText = input instanceof Blob ? transcription : input;
@@ -225,7 +276,7 @@
     transcription = inferText;
 
     if (isFirstMessage) {
-      const historyRes = await fetch("/api/history/create", {
+      await fetch("/api/history/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -233,14 +284,24 @@
         body: JSON.stringify({
           title: inferText,
         }),
-      });
-
-      if (historyRes.status === 200) {
-        const json = await historyRes.json();
-        currentHistoryId = json.res.id;
-        history.add(json);
-        isFirstMessage = false;
-      }
+      })
+        .then(async (historyRes) => {
+          if (historyRes.status === 200) {
+            const json = await historyRes.json();
+            currentHistoryId = json.res.id;
+            history.add(json);
+            isFirstMessage = false;
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+          toast("Failed to create a history", {
+            // eslint-disable-next-line
+            // @ts-ignore
+            description: err.message,
+            icon: MessageSquareWarning,
+          });
+        });
     }
 
     transcriptionHistory = [
@@ -264,6 +325,14 @@
           role: "user",
           createdAt: new Date(),
         }),
+      }).catch((err) => {
+        console.error(err);
+        toast("Failed to add to history", {
+          // eslint-disable-next-line
+          // @ts-ignore
+          description: err.message,
+          icon: MessageSquareWarning,
+        });
       });
     }
 
@@ -273,11 +342,17 @@
         context: inferText,
         historyId: currentHistoryId!,
       }),
-    }).then(async (res) => {
-      const data = await res.json();
-      console.log(JSON.stringify(data));
-      return data;
-    });
+    })
+      .then((res) => res.json())
+      .catch((err) => {
+        console.error(err);
+        toast("Failed to retrieve response", {
+          // eslint-disable-next-line
+          // @ts-ignore
+          description: err.message,
+          icon: MessageSquareWarning,
+        });
+      });
 
     conversationResult = genRes.text;
 
@@ -293,6 +368,14 @@
           role: "miruhane",
           createdAt: new Date(),
         }),
+      }).catch((err) => {
+        console.error(err);
+        toast("Failed to add to history", {
+          // eslint-disable-next-line
+          // @ts-ignore
+          description: err.message,
+          icon: MessageSquareWarning,
+        });
       });
     }
 
@@ -310,7 +393,15 @@
       utterance.onend = () => {
         if (isVoiceMode) {
           if (settings.getKeyValue("model-stt") === "browser" && recognition) {
-            recognition.start();
+            try {
+              recognition.start();
+            } catch (e) {
+              // eslint-disable-next-line
+              // @ts-ignore
+              if (!e.message.includes("already started")) {
+                throw e;
+              }
+            }
             isPaused = false;
           } else if (mediaRecorder && mediaRecorder.state === "paused") {
             mediaRecorder.resume();
@@ -322,8 +413,20 @@
     } else {
       const speakRes = await fetch("/api/speak", {
         method: "POST",
-        body: createFormData(genRes.text, "text"),
-      }).then((r) => r.json());
+        body: createFormData({
+          text: genRes.text,
+        }),
+      })
+        .then((r) => r.json())
+        .catch((err) => {
+          console.error(err);
+          toast("Failed to retrieve voice response", {
+            // eslint-disable-next-line
+            // @ts-ignore
+            description: err.message,
+            icon: MessageSquareWarning,
+          });
+        });
 
       const blob = new Blob(
         [Uint8Array.from(atob(speakRes.res.audio_data), (c) => c.charCodeAt(0))],
@@ -332,6 +435,7 @@
         },
       );
       const audio = new Audio(URL.createObjectURL(blob));
+      audio.crossOrigin = "anonymous";
       currentAudio = audio;
       isAudioPaused = false;
       isPaused = false;
@@ -343,6 +447,15 @@
         }
       }
       await new Promise<void>((resolve) => {
+        void audio.play().catch((err) => {
+          console.error(err);
+          toast("Failed to play audio response", {
+            // eslint-disable-next-line
+            // @ts-ignore
+            description: err.message,
+            icon: MessageSquareWarning,
+          });
+        });
         if (audio) {
           audio.onended = () => {
             currentAudio = null;
@@ -351,14 +464,21 @@
             isPaused = false;
             if (isVoiceMode) {
               if (settings.getKeyValue("model-stt") === "browser" && recognition) {
-                recognition.start();
+                try {
+                  recognition.start();
+                } catch (e) {
+                  // eslint-disable-next-line
+                  // @ts-ignore
+                  if (!e.message.includes("already started")) {
+                    throw e;
+                  }
+                }
               } else if (mediaRecorder && mediaRecorder.state === "paused") {
                 mediaRecorder.resume();
               }
             }
             resolve();
           };
-          void audio.play();
         }
       });
     }
@@ -382,7 +502,13 @@
       }
       toRunNextStage = true;
     } catch (err) {
-      console.error("Error processing input:", err);
+      console.error(err);
+      toast("Error processing input", {
+        // eslint-disable-next-line
+        // @ts-ignore
+        description: err.message,
+        icon: MessageSquareWarning,
+      });
     } finally {
       isLoading = false;
       if (isVoiceMode) {
@@ -430,6 +556,9 @@
     content="Professional chat interface with voice recognition capabilities"
   />
 </svelte:head>
+
+<Toaster />
+
 <Sidebar.Provider>
   <AppSidebar username={data.user.username} email={data.user.email} />
   <Sidebar.Inset>
