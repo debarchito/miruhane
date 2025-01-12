@@ -14,6 +14,7 @@
   history.set(data.history);
   settings.set(data.settings);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let recognition: any = $state(null);
   let synthesis: SpeechSynthesis | null = $state(null);
   let currentHistoryId: string | null = $state(null);
@@ -57,6 +58,7 @@
   let isAudioPaused = $state(false);
   let messageText = $state("");
   let isVoiceMode = $state(true);
+  let showWarning = $state(true);
 
   async function initMediaRecorder() {
     if (settings.getKeyValue("model-stt") === "browser") {
@@ -417,7 +419,6 @@
     content="Professional chat interface with voice recognition capabilities"
   />
 </svelte:head>
-
 <Sidebar.Provider>
   <AppSidebar username={data.user.username} email={data.user.email} />
   <Sidebar.Inset>
@@ -438,6 +439,36 @@
       <div
         class="flex min-h-[calc(100vh-6rem)] flex-1 flex-col items-center justify-center rounded-xl backdrop-blur-lg md:min-h-[calc(100vh-8rem)]"
       >
+        {#if showWarning}
+          <Card.Root class="border-warning bg-warning/20 border-2 shadow-lg">
+            <Card.Header>
+              <div class="flex items-center justify-between">
+                <Card.Title class="text-warning text-xl font-bold">👋 Hello there!</Card.Title>
+                <Button.Root
+                  variant="ghost"
+                  size="icon"
+                  onclick={() => (showWarning = false)}
+                  class="h-6 w-6"
+                >
+                  <X class="h-4 w-4" />
+                </Button.Root>
+              </div>
+              <Card.Description class="text-warning/90 font-medium">
+                <div class="bg-warning/10 border-warning/30 rounded-lg border p-2">
+                  <p class="mb-2">
+                    <strong class="text-primary/80">Miruhane:</strong> Hi! I'm still in development,
+                    so you might see some bugs. Just refresh if anything goes wrong, and don't mind my
+                    occasional slow responses (development endpoints and cold starts!) 😊. It's recommended
+                    to speak in a quiet environment to get the best results. Noise diffing on the way
+                    though! 🎉
+                  </p>
+                </div>
+              </Card.Description>
+              <Card.Footer></Card.Footer>
+            </Card.Header>
+          </Card.Root>
+        {/if}
+
         <div
           class="{hasStarted
             ? 'grid grid-cols-1 items-center gap-4 md:grid-cols-2'
@@ -537,7 +568,7 @@
                 {/if}
 
                 {#if transcriptionHistory.length > 0}
-                  <InstantHistory bind:transcriptionHistory />
+                  <InstantHistory bind:transcriptionHistory bind:currentHistoryId />
                 {/if}
               </div>
             {:else}
@@ -545,7 +576,7 @@
                 <Button.Root
                   onclick={startConversation}
                   variant="outline"
-                  class="transition-all hover:scale-105 active:scale-95"
+                  class="relative overflow-hidden border border-primary/20 bg-primary/10 backdrop-blur-sm transition-all before:absolute before:inset-0 before:rounded-lg before:bg-gradient-to-tr before:from-primary/10 before:via-transparent before:to-primary/10 hover:scale-105 active:scale-95"
                 >
                   <MessageSquare class="mr-2 h-4 w-4" />
                   Start Conversation

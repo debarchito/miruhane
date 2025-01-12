@@ -5,12 +5,14 @@
 
   let {
     transcriptionHistory = $bindable(),
+    currentHistoryId = $bindable(),
   }: {
     transcriptionHistory: {
       author: string;
       text: string;
       timestamp: Date;
     }[];
+    currentHistoryId: string | null;
   } = $props();
 </script>
 
@@ -25,8 +27,9 @@
   <Sheet.Content side="right">
     <Sheet.Header>
       <Sheet.Title>Instant History</Sheet.Title>
-      <Sheet.Description class="text-muted-foreground">Your recent transcriptions</Sheet.Description
-      >
+      <Sheet.Description class="text-muted-foreground">
+        Click <a href="/history/{currentHistoryId}"> here </a> to view full history.
+      </Sheet.Description>
     </Sheet.Header>
     <div class="max-h-[80vh] overflow-y-auto px-2 sm:px-4">
       {#each transcriptionHistory as record}

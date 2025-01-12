@@ -1,53 +1,150 @@
 <script lang="ts">
   import * as Card from "$lib/components/ui/card/index.js";
+  import * as Input from "$lib/components/ui/input/index.js";
   import * as Button from "$lib/components/ui/button/index.js";
-  import { ArrowLeft, Clock, MessageCircle } from "lucide-svelte";
+  import { ArrowLeft, Clock, MessageCircle, Search, X } from "lucide-svelte";
   let { data } = $props();
+  let searchTerm = $state("");
+
+  type TextPart = {
+    text: string;
+    highlight: boolean;
+  };
+
+  const highlightText = (text: string, terms: string[]): TextPart[] => {
+    if (terms.length === 0) return [{ text, highlight: false }];
+
+    let parts: TextPart[] = [{ text, highlight: false }];
+
+    terms.forEach((term) => {
+      if (!term) return;
+      const regex = new RegExp(`(${term.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")})`, "gi");
+      parts = parts.flatMap((part) => {
+        if (!part.highlight) {
+          const splits = part.text.split(regex);
+          return splits.map((split) => ({
+            text: split,
+            highlight: split.toLowerCase() === term.toLowerCase(),
+          }));
+        }
+        return [part];
+      });
+    });
+
+    return parts;
+  };
+
+  const filteredEntries = $derived(
+    data.res.chatEntries.filter((entry) => {
+      const content = entry.content.toLowerCase();
+      const terms = searchTerm
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((term) => term.length > 0);
+      return terms.length === 0 || terms.every((term) => content.includes(term));
+    }),
+  );
 </script>
 
-<div class="container mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-  <Button.Root variant="ghost" class="mb-6 hover:bg-secondary/20" onclick={() => history.back()}>
-    <ArrowLeft class="mr-2 h-4 w-4" />
-    Back
-  </Button.Root>
-
-  <Card.Root class="mb-6 w-full border-0 bg-background/50 shadow-sm backdrop-blur-sm">
-    <Card.Header>
-      <div class="flex items-center">
-        <MessageCircle class="mr-2 h-5 w-5 text-primary" />
-        <Card.Title class="truncate text-lg font-medium">{data.res.title.slice(0, -7)}</Card.Title>
-      </div>
-      <Card.Description class="flex items-center text-xs text-muted-foreground">
-        <Clock class="mr-1 h-3 w-3" />
-        {new Date(data.res.createdAt).toLocaleDateString()}
-      </Card.Description>
-    </Card.Header>
-  </Card.Root>
-
-  <div class="space-y-6">
-    {#each [...data.res.chatEntries].reverse() as entry}
-      <div class={`flex ${entry.role === "user" ? "justify-end" : "justify-start"}`}>
-        <div
-          class={`max-w-[95%] sm:max-w-[80%] ${entry.role === "user" ? "items-end" : "items-start"}`}
-        >
-          <div class="mb-1 text-sm font-medium text-muted-foreground">
-            {entry.role === "user" ? "You" : "Miruhane"}
-          </div>
-          <div
-            class={`rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 ${
-              entry.role === "user" ? "bg-primary text-primary-foreground" : "bg-secondary/30"
-            }`}
+<div class="container-fluid mx-auto max-w-4xl px-4 py-4 sm:px-4 sm:py-8">
+  <div class="fixed left-0 right-0 top-0 z-50 bg-background/95 p-4 backdrop-blur-sm">
+    <div class="mx-auto max-w-4xl">
+      <div class="relative">
+        <Search
+          class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground"
+        />
+        <Input.Root
+          type="text"
+          placeholder="Search messages..."
+          class="w-full rounded-lg border border-input bg-background py-2 pl-10 pr-10 text-sm sm:text-base"
+          bind:value={searchTerm}
+        />
+        {#if searchTerm}
+          <button
+            class="absolute right-3 top-1/2 -translate-y-1/2 transform"
+            onclick={() => (searchTerm = "")}
           >
-            <div class="whitespace-pre-wrap text-sm">{entry.content}</div>
-          </div>
-        </div>
+            <X class="h-4 w-4 text-muted-foreground" />
+          </button>
+        {/if}
       </div>
-    {/each}
+    </div>
   </div>
 
-  {#if data.meta.hasMore}
-    <div class="mt-8 flex justify-center">
-      <Button.Root variant="outline" class="text-sm">Load More Messages</Button.Root>
+  <div class="mt-16">
+    <Button.Root
+      variant="ghost"
+      class="mb-4 hover:bg-secondary/20 sm:mb-6"
+      onclick={() => history.back()}
+    >
+      <ArrowLeft class="mr-2 h-4 w-4" />
+      <span class="hidden sm:inline">Back</span>
+    </Button.Root>
+
+    <Card.Root class="mb-4 w-full border-0 bg-background/50 shadow-sm backdrop-blur-sm sm:mb-6">
+      <Card.Header class="p-3 sm:p-4">
+        <div class="flex w-full items-center justify-between gap-2">
+          <div class="flex min-w-0 items-center">
+            <MessageCircle class="mr-2 h-4 w-4 flex-shrink-0 text-primary sm:h-5 sm:w-5" />
+            <Card.Title class="truncate text-base font-medium sm:text-lg"
+              >{data.res.title.slice(0, -7)}</Card.Title
+            >
+          </div>
+          <Card.Description class="flex flex-shrink-0 items-center text-xs text-muted-foreground">
+            <Clock class="mr-1 h-3 w-3" />
+            {new Date(data.res.createdAt).toLocaleDateString()}
+          </Card.Description>
+        </div>
+      </Card.Header>
+    </Card.Root>
+
+    <div class="space-y-4 sm:space-y-6">
+      {#each [...filteredEntries].reverse() as entry}
+        <div class={`flex ${entry.role === "user" ? "justify-end" : "justify-start"}`}>
+          <div
+            class={`max-w-[85%] sm:max-w-[75%] ${entry.role === "user" ? "items-end" : "items-start"}`}
+          >
+            <div
+              class="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground sm:text-sm"
+            >
+              <span>{entry.role === "user" ? "You" : "Miruhane"}</span>
+              <span class="text-2xs opacity-75">•</span>
+              <span class="text-2xs opacity-75"
+                >{new Date(entry.createdAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}</span
+              >
+            </div>
+            <div
+              class={`rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 ${
+                entry.role === "user" ? "bg-primary text-primary-foreground" : "bg-secondary/30"
+              }`}
+            >
+              <div class="whitespace-pre-wrap text-sm leading-relaxed sm:text-base">
+                {#each highlightText( entry.content, searchTerm
+                    .toLowerCase()
+                    .split(/\s+/)
+                    .filter((term) => term.length > 0), ) as part}
+                  {#if part.highlight}
+                    <mark class="bg-primary dark:bg-primary/80">{part.text}</mark>
+                  {:else}
+                    {part.text}
+                  {/if}
+                {/each}
+              </div>
+            </div>
+          </div>
+        </div>
+      {/each}
     </div>
-  {/if}
+
+    {#if data.meta.hasMore}
+      <div class="mt-6 flex justify-center sm:mt-8">
+        <Button.Root variant="outline" class="px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm"
+          >Load More Messages</Button.Root
+        >
+      </div>
+    {/if}
+  </div>
 </div>
