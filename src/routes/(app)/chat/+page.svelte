@@ -580,7 +580,7 @@
         class="flex min-h-[calc(100vh-6rem)] flex-1 flex-col items-center justify-center rounded-xl backdrop-blur-lg md:min-h-[calc(100vh-8rem)]"
       >
         {#if showWarning}
-          <Card.Root class="border-warning bg-warning/20 border-2 shadow-lg">
+          <Card.Root class="border-warning bg-warning/20 mb-10 border-2 shadow-lg">
             <Card.Header>
               <div class="flex items-center justify-between">
                 <Card.Title class="text-warning text-xl font-bold">👋 Hello there!</Card.Title>

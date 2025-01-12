@@ -46,6 +46,10 @@
   );
 </script>
 
+<svelte:head>
+  <title>{data.res.title.slice(0, -7)} | miruhane.</title>
+</svelte:head>
+
 <div class="container-fluid mx-auto max-w-4xl px-4 py-4 sm:px-4 sm:py-8">
   <div class="fixed left-0 right-0 top-0 z-50 bg-background/95 p-4 backdrop-blur-sm">
     <div class="mx-auto max-w-4xl">
@@ -127,7 +131,9 @@
                     .split(/\s+/)
                     .filter((term) => term.length > 0), ) as part}
                   {#if part.highlight}
-                    <mark class="bg-primary dark:bg-primary/80">{part.text}</mark>
+                    <mark class="bg-primary/30 dark:bg-primary/80">
+                      {part.text}
+                    </mark>
                   {:else}
                     {part.text}
                   {/if}

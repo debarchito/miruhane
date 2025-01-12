@@ -28,7 +28,7 @@
     <Sheet.Header>
       <Sheet.Title>Instant History</Sheet.Title>
       <Sheet.Description class="text-muted-foreground">
-        Click <a href="/history/{currentHistoryId}"> here </a> to view full history.
+        Click <a class="text-primary" href="/history/{currentHistoryId}"> here </a> to view full history.
       </Sheet.Description>
     </Sheet.Header>
     <div class="max-h-[80vh] overflow-y-auto px-2 sm:px-4">
