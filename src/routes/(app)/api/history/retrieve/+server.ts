@@ -11,6 +11,7 @@ const requestSchema = z.object({
   cursor: z.string().datetime().nullable().optional(),
   pageSize: z.number().int().min(1).max(20).default(5),
   direction: z.enum(["next", "prev"]).default("next"),
+  order: z.enum(["asc", "desc"]).default("desc"),
 });
 
 export const POST: RequestHandler = async ({ locals, request }) => {
@@ -64,7 +65,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     );
   }
 
-  const { historyId, cursor, pageSize, direction } = result.data;
+  const { historyId, cursor, pageSize, direction, order } = result.data;
 
   const res = await db.query.history.findFirst({
     where: (table, { eq, and }) =>
@@ -78,7 +79,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
                 ? lt(fields.createdAt, new Date(cursor))
                 : gt(fields.createdAt, new Date(cursor))
           : undefined,
-        orderBy: (fields) => (direction === "next" ? [desc(fields.createdAt)] : [fields.createdAt]),
+        orderBy: (fields) => (order === "desc" ? [desc(fields.createdAt)] : [fields.createdAt]),
       },
     },
   });

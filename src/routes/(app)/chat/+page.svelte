@@ -200,9 +200,11 @@
   }
 
   async function processInput(input: string | Blob) {
-    const createFormData = (data: string | Blob, key: string) => {
+    const createFormData = (data: Record<string, string | Blob>) => {
       const fd = new FormData();
-      fd.append(key, data);
+      Object.entries(data).forEach(([key, value]) => {
+        fd.append(key, value);
+      });
       return fd;
     };
 
@@ -211,7 +213,9 @@
     if (input instanceof Blob && settings.getKeyValue("model-stt") !== "browser") {
       const inferRes = await fetch("/api/infer", {
         method: "POST",
-        body: createFormData(input, "audio"),
+        body: createFormData({
+          audio: input,
+        }),
       }).then((r) => r.json());
       inferText = inferRes.text;
     } else {
@@ -265,8 +269,15 @@
 
     const genRes = await fetch("/api/gen", {
       method: "POST",
-      body: createFormData(inferText, "context"),
-    }).then((res) => res.json());
+      body: createFormData({
+        context: inferText,
+        historyId: currentHistoryId!,
+      }),
+    }).then(async (res) => {
+      const data = await res.json();
+      console.log(JSON.stringify(data));
+      return data;
+    });
 
     conversationResult = genRes.text;
 

@@ -3,21 +3,46 @@ import type { RequestHandler } from "./$types";
 import { GEMINI_API_KEY } from "$env/static/private";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+type Response = {
+  res: {
+    chatEntries: {
+      id: string;
+      createdAt: Date;
+      updatedAt: Date;
+      historyId: string;
+      content: string;
+      role: "user" | "miruhane";
+    }[];
+    id: string;
+    createdAt: Date;
+    userId: string;
+    updatedAt: Date;
+    title: string;
+  };
+  meta: {
+    count: number;
+    hasMore: boolean;
+    nextCursor: Date | null;
+    pageSize: number;
+  };
+};
+
 const headers = {
   "Content-Type": "application/json",
 };
 const requestSchema = z.object({
   context: z.string().min(1, "Context is required"),
+  historyId: z.string(),
 });
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
   model: "gemini-1.5-flash",
   systemInstruction:
-    "You are a conversational chatbot. Your name is Miruhane and you are designed by Aurialis. You also have assistant-like features. Your task is have meaningful conversations with the users. Do not repeat your name or affiliation unless specifically asked. Try to provide, crisp, short and to the point responses. But, always be friendly.",
+    "You are a conversational chatbot. You are currently in alpha phase of development. Your name is Miruhane and you are designed by Aurialis. You also have assistant-like features. Your task is have meaningful conversations with the users. Do not repeat your name or affiliation unless specifically asked. Try to provide, crisp, short and to the point responses. But, always be friendly. You have a memory record of the last 10 messages during the alpha phase. You can use this memory to provide better responses. You can also use the context of the conversation to provide better responses. If you forget something, tell the user that you forgot and have the limit.",
 });
 
-export const POST: RequestHandler = async ({ locals, request }) => {
+export const POST: RequestHandler = async ({ locals, request, fetch }) => {
   if (!locals.session) {
     return new Response(
       JSON.stringify({
@@ -32,7 +57,24 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     );
   }
 
-  const data = await request.formData();
+  let data;
+  try {
+    data = await request.formData();
+  } catch (err) {
+    console.error(err);
+    return new Response(
+      JSON.stringify({
+        text: null,
+        status: 400,
+        message: "Invalid form data",
+      }),
+      {
+        status: 400,
+        headers,
+      },
+    );
+  }
+
   const formData = Object.fromEntries(data);
 
   const result = requestSchema.safeParse(formData);
@@ -50,34 +92,93 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     );
   }
 
-  const { context } = result.data;
+  const { context, historyId } = result.data;
 
-  const res = await model.generateContent({
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            text: context,
-          },
-        ],
+  let body: Response;
+  try {
+    const temp = await fetch("/api/history/retrieve", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    ],
-    generationConfig: {
-      maxOutputTokens: 50,
-      temperature: 0.1,
-    },
-  });
+      body: JSON.stringify({
+        historyId,
+        cursor: new Date(),
+        pageSize: 10,
+        direction: "next",
+        order: "asc",
+      }),
+    });
 
-  return new Response(
-    JSON.stringify({
-      text: res.response.text(),
-      status: 200,
-      message: null,
-    }),
-    {
-      status: 200,
-      headers,
-    },
-  );
+    if (!temp.ok) {
+      throw new Error(`HTTP error! status: ${temp.status}`);
+    }
+
+    body = await temp.json().catch(() => {
+      throw new Error("Failed to parse JSON response");
+    });
+
+    if (!body?.res?.chatEntries) {
+      throw new Error("Invalid response format");
+    }
+  } catch (error) {
+    return new Response(
+      JSON.stringify({
+        text: null,
+        status: 500,
+        message: error instanceof Error ? error.message : "An unexpected error occurred",
+      }),
+      {
+        status: 500,
+        headers,
+      },
+    );
+  }
+
+  const history = body.res.chatEntries
+    .filter((entry, index) => !(entry.role === "miruhane" && index === 0))
+    .map((entry) => ({
+      role: entry.role === "miruhane" ? "model" : "user",
+      parts: [{ text: entry.content }],
+    }));
+
+  try {
+    const res = await model
+      .startChat({
+        history,
+        generationConfig: {
+          maxOutputTokens: 50,
+          temperature: 0.1,
+        },
+      })
+      .sendMessage(context);
+
+    if (!res?.response) {
+      throw new Error("Invalid AI response");
+    }
+
+    return new Response(
+      JSON.stringify({
+        text: res.response.text(),
+        status: 200,
+        message: null,
+      }),
+      {
+        status: 200,
+        headers,
+      },
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({
+        text: null,
+        status: 500,
+        message: error instanceof Error ? error.message : "AI generation failed",
+      }),
+      {
+        status: 500,
+        headers,
+      },
+    );
+  }
 };

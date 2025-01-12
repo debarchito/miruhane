@@ -40,6 +40,7 @@ export const load: PageServerLoad = async ({ locals, params, fetch }) => {
       cursor: new Date(),
       pageSize: 10,
       direction: "next",
+      order: "desc",
     }),
   });
 
