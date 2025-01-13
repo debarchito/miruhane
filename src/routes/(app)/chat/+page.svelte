@@ -597,7 +597,14 @@
           >
             <Card.Header>
               <div class="flex items-center justify-between">
-                <Card.Title class="text-xl font-semibold text-primary">👋 Hello there!</Card.Title>
+                <Card.Title class="text-xl font-semibold text-primary">
+                  miruhane. <div
+                    class="inline-flex items-center justify-center gap-1 rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-sm font-medium text-primary"
+                  >
+                    <span>Under Development</span>
+                    🚧
+                  </div>
+                </Card.Title>
                 <Button.Root
                   variant="ghost"
                   size="icon"
@@ -610,11 +617,10 @@
               <Card.Description class="text-muted-foreground">
                 <div class="rounded-lg p-4">
                   <p class="mb-2">
-                    <strong class="text-primary">Miruhane:</strong> Hi! I'm still in development, so
-                    you might see some bugs. Just refresh if anything goes wrong, and don't mind my occasional
-                    slow responses (development endpoints and cold starts!) 😊. It's recommended to speak
-                    in a quiet environment to get the best results. Noise diffing on the way though!
-                    🎉
+                    Hi! I'm still in development, so you might see some bugs. Just refresh if
+                    anything goes wrong, and don't mind my occasional slow responses (development
+                    endpoints and cold starts!) 😊. It's recommended to speak in a quiet environment
+                    to get the best results. Noise diffing on the way though 🎉!
                   </p>
                 </div>
               </Card.Description>
