@@ -74,7 +74,11 @@
         id: messageFeed.length,
         sender: "user",
         text: currentMessage,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
       };
 
       // Add the new message to the feed
@@ -986,7 +990,11 @@
                   id={id.toString()}
                 >
                   <div class={`max-w-[75%] break-words rounded-lg px-4 py-2`}>
-                    <div class={`text-sm text-gray-400 pb-1 ${sender === "bot" ? "" : "text-right"}`}>{timestamp}</div>
+                    <div
+                      class={`pb-1 text-sm text-gray-400 ${sender === "bot" ? "" : "text-right"}`}
+                    >
+                      {timestamp}
+                    </div>
                     <div
                       class={`rounded-lg p-4 ${sender === "bot" ? "bg-secondary/30" : "bg-primary text-primary-foreground"} shadow-lg`}
                     >
