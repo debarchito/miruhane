@@ -46,7 +46,9 @@
 
       messageFeed = [...messageFeed, newMessage];
       currentMessage = "";
-      scrollChatBottom();
+      setTimeout(() => {
+        scrollChatBottom();
+      }, 1);
     }
   }
 
