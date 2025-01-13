@@ -21,6 +21,7 @@
     Sun,
     Moon,
     MessageSquareWarning,
+    PlusCircle,
     MessageCircle,
     ArrowLeft,
   } from "lucide-svelte";
@@ -959,12 +960,12 @@
           class="fixed bottom-5 right-5 cursor-pointer overflow-hidden rounded-full border border-primary/20 bg-primary/10 px-4 py-6 shadow-lg backdrop-blur-sm transition-all before:absolute before:inset-0 before:rounded-lg before:bg-gradient-to-tr before:from-primary/10 before:via-transparent before:to-primary/10 hover:scale-105 active:scale-95"
           onclick={toggleChat}
         >
-          <MessageCircle />
+          <PlusCircle />
         </Button.Root>
 
         {#if isChatOpen}
           <div
-            class="fixed inset-0 z-40 flex flex-col overflow-hidden rounded-2xl bg-secondary shadow-lg"
+            class="fixed inset-0 z-40 flex flex-col overflow-hidden rounded-2xl bg-background shadow-lg"
           >
             <!-- Header with Back Button -->
             <div
@@ -991,12 +992,12 @@
                 >
                   <div class={`max-w-[75%] break-words rounded-lg px-4 py-2`}>
                     <div
-                      class={`pb-1 text-sm text-gray-400 ${sender === "bot" ? "" : "text-right"}`}
+                      class="pb-1 text-sm text-gray-400"
                     >
                       {timestamp}
                     </div>
                     <div
-                      class={`rounded-lg p-4 ${sender === "bot" ? "bg-secondary/30" : "bg-primary text-primary-foreground"} shadow-lg`}
+                      class={`rounded-2xl p-4 ${sender === "bot" ? "bg-secondary/30" : "bg-primary text-primary-foreground"} shadow-lg`}
                     >
                       {text}
                     </div>
