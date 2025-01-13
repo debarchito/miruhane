@@ -1,5 +1,6 @@
 import { redirect } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
+import { db } from "$lib/server/db";
 
 type Response = {
   res: {
@@ -30,30 +31,51 @@ export const load: PageServerLoad = async ({ locals, params, fetch }) => {
     return redirect(302, "/sign-in");
   }
 
-  const body = await fetch("/api/history/retrieve", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      historyId: params.id,
-      cursor: new Date(),
-      pageSize: 10,
-      direction: "next",
-      order: "desc",
-    }),
-  });
+  try {
+    const history = await db.query.history.findFirst({
+      where: (histories, { eq, and }) =>
+        and(eq(histories.userId, locals.session!.userId), eq(histories.id, params.id)),
+      columns: {
+        createdAt: true,
+      },
+    });
 
-  const res: Response = await body.json();
+    if (!history) {
+      return redirect(302, "/history");
+    }
 
-  if (!res.res) {
+    const body = await fetch("/api/history/retrieve", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        historyId: params.id,
+        cursor: history.createdAt,
+        pageSize: 10,
+        direction: "next",
+        order: "asc",
+      }),
+    });
+
+    if (!body.ok) {
+      throw new Error("Failed to fetch history");
+    }
+
+    const res: Response = await body.json();
+
+    if (!res.res) {
+      return redirect(302, "/history");
+    }
+
+    return {
+      user: locals.user!,
+      session: locals.session,
+      res: res.res,
+      meta: res.meta,
+    };
+  } catch (error) {
+    console.error("Error loading history:", error);
     return redirect(302, "/history");
   }
-
-  return {
-    user: locals.user!,
-    session: locals.session,
-    res: res.res,
-    meta: res.meta,
-  };
 };

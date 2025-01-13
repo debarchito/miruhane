@@ -5,6 +5,9 @@
   import { ArrowLeft, Clock, MessageCircle, Search, X } from "lucide-svelte";
   let { data } = $props();
   let searchTerm = $state("");
+  let loading = $state(false);
+  let chatEntries = $state(data.res.chatEntries);
+  let hasMore = $state(data.meta.hasMore);
 
   type TextPart = {
     text: string;
@@ -34,8 +37,35 @@
     return parts;
   };
 
+  const loadMoreMessages = async () => {
+    loading = true;
+    try {
+      const lastEntry = chatEntries[chatEntries.length - 1];
+      const body = await fetch("/api/history/retrieve", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          historyId: data.res.id,
+          cursor: new Date(lastEntry.createdAt),
+          pageSize: 10,
+          direction: "next",
+          order: "asc",
+        }),
+      });
+      const res = await body.json();
+      chatEntries = [...chatEntries, ...res.res.chatEntries];
+      hasMore = res.meta.hasMore;
+    } catch (error) {
+      console.error("Failed to load more messages:", error);
+    } finally {
+      loading = false;
+    }
+  };
+
   const filteredEntries = $derived(
-    data.res.chatEntries.filter((entry) => {
+    chatEntries.filter((entry) => {
       const content = entry.content.toLowerCase();
       const terms = searchTerm
         .toLowerCase()
@@ -76,13 +106,9 @@
   </div>
 
   <div class="mt-16">
-    <Button.Root
-      variant="ghost"
-      class="mb-4 hover:bg-secondary/20 sm:mb-6"
-      onclick={() => history.back()}
-    >
-      <ArrowLeft class="mr-2 h-4 w-4" />
-      <span class="hidden sm:inline">Back</span>
+    <Button.Root variant="ghost" class="group" onclick={() => history.back()}>
+      <ArrowLeft class="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
+      <span>Back</span>
     </Button.Root>
 
     <Card.Root class="mb-4 w-full border-0 bg-background/50 shadow-sm backdrop-blur-sm sm:mb-6">
@@ -103,7 +129,7 @@
     </Card.Root>
 
     <div class="space-y-4 sm:space-y-6">
-      {#each [...filteredEntries].reverse() as entry}
+      {#each [...filteredEntries] as entry}
         <div class={`flex ${entry.role === "user" ? "justify-end" : "justify-start"}`}>
           <div
             class={`max-w-[85%] sm:max-w-[75%] ${entry.role === "user" ? "items-end" : "items-start"}`}
@@ -145,11 +171,16 @@
       {/each}
     </div>
 
-    {#if data.meta.hasMore}
+    {#if hasMore}
       <div class="mt-6 flex justify-center sm:mt-8">
-        <Button.Root variant="outline" class="px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm"
-          >Load More Messages</Button.Root
+        <Button.Root
+          variant="outline"
+          class="px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm"
+          disabled={loading}
+          onclick={loadMoreMessages}
         >
+          {loading ? "Loading..." : "Load More Messages"}
+        </Button.Root>
       </div>
     {/if}
   </div>

@@ -51,7 +51,7 @@
 
   async function deleteHistoryEntry(id: string) {
     const response = await fetch("/api/history/delete", {
-      method: "PUT",
+      method: "POST",
       body: JSON.stringify({ historyId: id }),
       headers: {
         "Content-Type": "application/json",

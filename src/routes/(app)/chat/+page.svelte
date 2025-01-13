@@ -26,12 +26,12 @@
   let { data } = $props();
   history.set(data.history);
   settings.set(data.settings);
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let recognition: any = $state(null);
   let synthesis: SpeechSynthesis | null = $state(null);
   let currentHistoryId: string | null = $state(null);
   let isFirstMessage = $state(true);
+  let isSpeaking = $state(false);
 
   // Initialize Web Speech API if available
   $effect(() => {
@@ -58,6 +58,11 @@
       }
 
       synthesis = window.speechSynthesis;
+      if (synthesis) {
+        synthesis.onvoiceschanged = () => {
+          synthesis!.getVoices();
+        };
+      }
     }
   });
 
@@ -123,6 +128,8 @@
 
   async function startRecording() {
     try {
+      if (isSpeaking) return;
+
       if (settings.getKeyValue("model-stt") === "browser") {
         if (recognition) {
           try {
@@ -166,6 +173,7 @@
       isPaused = false;
       isAudioPaused = false;
       transcription = "";
+      transcriptionHistory = [];
       conversationResult = "";
       isLoading = false;
       toRunNextStage = false;
@@ -174,6 +182,7 @@
       messageText = "";
       isFirstMessage = true;
       currentHistoryId = null;
+      isSpeaking = false;
       if (currentAudio) {
         currentAudio.pause();
         currentAudio = null;
@@ -390,8 +399,10 @@
     ];
 
     if (settings.getKeyValue("model-tts") === "browser" && synthesis) {
+      isSpeaking = true;
       const utterance = new SpeechSynthesisUtterance(genRes.text);
       utterance.onend = () => {
+        isSpeaking = false;
         if (isVoiceMode) {
           if (settings.getKeyValue("model-stt") === "browser" && recognition) {
             try {
@@ -512,7 +523,7 @@
       });
     } finally {
       isLoading = false;
-      if (isVoiceMode) {
+      if (isVoiceMode && !isSpeaking) {
         audioChunks = [];
         void startRecording();
       }
@@ -581,10 +592,12 @@
         class="flex min-h-[calc(100vh-6rem)] flex-1 flex-col items-center justify-center rounded-xl backdrop-blur-lg md:min-h-[calc(100vh-8rem)]"
       >
         {#if showWarning}
-          <Card.Root class="border-warning bg-warning/20 mb-10 border-2 shadow-lg">
+          <Card.Root
+            class="mb-10 w-full max-w-3xl border border-primary/20 bg-primary/10 shadow-lg backdrop-blur-lg"
+          >
             <Card.Header>
               <div class="flex items-center justify-between">
-                <Card.Title class="text-warning text-xl font-bold">👋 Hello there!</Card.Title>
+                <Card.Title class="text-xl font-semibold text-primary">👋 Hello there!</Card.Title>
                 <Button.Root
                   variant="ghost"
                   size="icon"
@@ -594,14 +607,14 @@
                   <X class="h-4 w-4" />
                 </Button.Root>
               </div>
-              <Card.Description class="text-warning/90 font-medium">
-                <div class="bg-warning/10 border-warning/30 rounded-lg border p-2">
+              <Card.Description class="text-muted-foreground">
+                <div class="rounded-lg p-4">
                   <p class="mb-2">
-                    <strong class="text-primary/80">Miruhane:</strong> Hi! I'm still in development,
-                    so you might see some bugs. Just refresh if anything goes wrong, and don't mind my
-                    occasional slow responses (development endpoints and cold starts!) 😊. It's recommended
-                    to speak in a quiet environment to get the best results. Noise diffing on the way
-                    though! 🎉
+                    <strong class="text-primary">Miruhane:</strong> Hi! I'm still in development, so
+                    you might see some bugs. Just refresh if anything goes wrong, and don't mind my occasional
+                    slow responses (development endpoints and cold starts!) 😊. It's recommended to speak
+                    in a quiet environment to get the best results. Noise diffing on the way though!
+                    🎉
                   </p>
                 </div>
               </Card.Description>

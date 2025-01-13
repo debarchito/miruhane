@@ -76,8 +76,8 @@ export const POST: RequestHandler = async ({ locals, request }) => {
         where: cursor
           ? (fields, { lt, gt }) =>
               direction === "next"
-                ? lt(fields.createdAt, new Date(cursor))
-                : gt(fields.createdAt, new Date(cursor))
+                ? gt(fields.createdAt, new Date(cursor))
+                : lt(fields.createdAt, new Date(cursor))
           : undefined,
         orderBy: (fields) => (order === "desc" ? [desc(fields.createdAt)] : [fields.createdAt]),
       },

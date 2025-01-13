@@ -1,29 +1,27 @@
 <script lang="ts">
   import * as Button from "$lib/components/ui/button/index.js";
-  import { Send, PlusCircle, ArrowLeft } from "lucide-svelte";
+  import * as Input from "$lib/components/ui/input/index.js";
+  import { Send, MessageCircle, ArrowLeft } from "lucide-svelte";
 
-  // State for controlling chat window visibility
   let isChatOpen: boolean = $state(false);
-
-  // State for the current message and message feed
   let currentMessage: string = $state("");
+
   let messageFeed: { id: number; sender: "bot" | "user"; text: string; timestamp: string }[] =
     $state([
       {
         id: 0,
         sender: "bot",
-        text: "Hello, how can I assist you today?",
+        text: "Hey there! Please give me a moment while I pull up our chat system.",
         timestamp: "2:30 PM",
       },
       {
         id: 1,
         sender: "user",
-        text: "I need help with my order.",
+        text: "No problem! Take your time :)",
         timestamp: "2:35 PM",
       },
     ]);
 
-  // Toggle chat visibility
   function toggleChat(): void {
     isChatOpen = !isChatOpen;
     if (isChatOpen) {
@@ -33,10 +31,8 @@
     }
   }
 
-  // Add a new message to the message feed
   function addMessage(): void {
     if (currentMessage.trim() !== "") {
-      // Create a new message object
       const newMessage: { id: number; sender: "user" | "bot"; text: string; timestamp: string } = {
         id: messageFeed.length,
         sender: "user",
@@ -48,20 +44,12 @@
         }),
       };
 
-      // Add the new message to the feed
       messageFeed = [...messageFeed, newMessage];
-
-      // Clear the input field
       currentMessage = "";
-
-      // Smoothly scroll to the bottom of the chat feed
-      setTimeout(() => {
-        scrollChatBottom();
-      }, 0);
+      scrollChatBottom();
     }
   }
 
-  // Scroll to the bottom of the chat window
   let chatContainer: HTMLElement | null = $state(null);
   function scrollChatBottom(): void {
     if (chatContainer) {
@@ -78,25 +66,37 @@
 
 <Button.Root
   variant="outline"
-  class="fixed bottom-5 right-5 cursor-pointer overflow-hidden rounded-full border border-primary/20 bg-primary/10 px-4 py-6 shadow-lg backdrop-blur-sm transition-all before:absolute before:inset-0 before:rounded-lg before:bg-gradient-to-tr before:from-primary/10 before:via-transparent before:to-primary/10 hover:scale-105 active:scale-95"
+  class="overflow-hiddenborder fixed bottom-5 right-5 cursor-pointer p-4 shadow-xl transition-all active:scale-95"
   onclick={toggleChat}
 >
-  <PlusCircle />
+  <MessageCircle class="h-6 w-6" />
+  Super Chat
 </Button.Root>
 
 {#if isChatOpen}
-  <div class="fixed inset-0 z-40 flex flex-col overflow-hidden rounded-2xl bg-background shadow-lg">
-    <!-- Header with Back Button -->
-    <div class="flex items-center justify-between rounded-t-2xl bg-transparent p-4 text-white">
-      <Button.Root variant="ghost" class="mb-4 hover:bg-white/5 sm:mb-6" onclick={toggleChat}>
-        <ArrowLeft class="mr-2 h-4 w-4" />
-        <span class="hidden sm:inline">Back</span>
+  <div
+    class="fixed inset-0 z-40 flex flex-col overflow-hidden rounded-2xl bg-background shadow-2xl"
+  >
+    <div class="flex items-center justify-between border-b border-primary/10 bg-background p-4">
+      <Button.Root variant="ghost" class="group" onclick={toggleChat}>
+        <ArrowLeft class="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
+        <span>Back</span>
       </Button.Root>
-      <span class="text-lg font-semibold">History Chat</span>
       <div class="w-8"></div>
     </div>
 
-    <!-- Chat message container -->
+    <div class="flex flex-col items-center justify-center gap-2 p-6">
+      <div
+        class="w-full max-w-3xl rounded-lg border border-primary/20 bg-primary/10 p-4 shadow-lg backdrop-blur-lg"
+      >
+        <div class="mb-2 text-xl font-semibold text-primary">Super Chat 🚧</div>
+        <p class="text-muted-foreground">
+          This experimental feature is currently under construction. Soon you'll be able to review
+          and analyze your entire conversation history in one place!
+        </p>
+      </div>
+    </div>
+
     <div class="flex-1 space-y-4 overflow-y-auto p-6" bind:this={chatContainer}>
       {#each messageFeed as { sender, text, timestamp, id }}
         <div
@@ -109,7 +109,7 @@
               {timestamp}
             </div>
             <div
-              class={`rounded-2xl p-4 ${sender === "bot" ? "bg-secondary/30" : "bg-primary text-primary-foreground"} shadow-lg`}
+              class={`rounded-2xl p-4 ${sender === "bot" ? "bg-secondary" : "bg-primary text-primary-foreground"} shadow-lg`}
             >
               {text}
             </div>
@@ -117,23 +117,23 @@
         </div>
       {/each}
     </div>
-
-    <!-- Chat input area, fixed at the bottom -->
-    <div class="flex items-center justify-between p-4">
-      <input
-        type="text"
-        class="mr-3 flex-grow rounded-3xl border border-gray-500 bg-transparent p-3 placeholder:text-gray-400 focus:outline-none"
-        placeholder="Write a message..."
-        bind:value={currentMessage}
-        onkeydown={handleKeyPress}
-      />
-      <Button.Root
-        variant="outline"
-        class="ml-3 flex cursor-pointer items-center justify-center overflow-hidden rounded-full border border-primary/20 bg-primary/10 p-3 shadow-lg backdrop-blur-sm transition-all hover:scale-105 active:scale-95"
-        onclick={addMessage}
-      >
-        <Send class="h-6 w-6 text-white" />
-      </Button.Root>
+    <div class="border-t border-primary/10 bg-background p-4">
+      <div class="flex items-center gap-3">
+        <Input.Root
+          type="text"
+          class="flex-grow border border-primary/20 bg-background px-6 py-3 shadow-inner placeholder:text-gray-400 focus:border-primary/40 focus:outline-none focus:ring-0"
+          placeholder="Write a message..."
+          bind:value={currentMessage}
+          onkeydown={handleKeyPress}
+        />
+        <Button.Root
+          variant="outline"
+          class="flex cursor-pointer items-center justify-center overflow-hidden border border-primary/20 bg-primary p-3 shadow-lg transition-all hover:border-primary/40 hover:bg-primary active:scale-95"
+          onclick={addMessage}
+        >
+          <Send class="h-5 w-5 text-primary-foreground" />
+        </Button.Root>
+      </div>
     </div>
   </div>
 {/if}

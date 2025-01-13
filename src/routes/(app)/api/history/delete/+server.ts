@@ -11,7 +11,7 @@ const createSchema = z.object({
   historyId: z.string(),
 });
 
-export const PUT: RequestHandler = async ({ locals, request }) => {
+export const POST: RequestHandler = async ({ locals, request }) => {
   if (!locals.session) {
     return new Response(
       JSON.stringify({
