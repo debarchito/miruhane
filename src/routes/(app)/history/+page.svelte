@@ -6,8 +6,9 @@
   import { ArrowLeft, ArrowRight, Clock, MessageCircle, Search, X, Trash2 } from "lucide-svelte";
 
   let { data }: { data: PageData } = $props();
-  const initialHistoryLog = data.history;
+  let initialHistoryLog = $state(data.history);
   let searchTerm = $state("");
+  let hasMore = $state(data.meta.hasMore);
 
   type TextPart = {
     text: string;
@@ -64,6 +65,25 @@
       );
     }
   }
+
+  async function loadMore() {
+    const lastEntry = initialHistoryLog[initialHistoryLog.length - 1];
+    const body = await fetch("/api/history/list", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        cursor: new Date(lastEntry.createdAt),
+        pageSize: 10,
+        direction: "next",
+        order: "desc",
+      }),
+    });
+    const res = await body.json();
+    initialHistoryLog = [...initialHistoryLog, ...res.res];
+    hasMore = res.meta.hasMore;
+  }
 </script>
 
 <svelte:head>
@@ -119,19 +139,19 @@
                         .split(/\s+/)
                         .filter((term) => term.length > 0), ) as part}
                       {#if part.highlight}
-                        <span class="bg-primary/30 dark:bg-primary/80 dark:text-white">
+                        <mark class="bg-primary/30 dark:bg-primary/80 dark:text-white">
                           {part.text}
-                        </span>
+                        </mark>
                       {:else}
-                        <span>{part.text}</span>
+                        {part.text}
                       {/if}
                     {/each}
                   </h2>
                 </div>
                 <div class="flex items-center text-sm text-muted-foreground">
                   <Clock class="mr-2 h-4 w-4" />
-                  <time datetime={historyEntry.updatedAt.toISOString()}>
-                    {historyEntry.updatedAt.toLocaleDateString(undefined, {
+                  <time datetime={new Date(historyEntry.updatedAt).toISOString()}>
+                    {new Date(historyEntry.updatedAt).toLocaleDateString(undefined, {
                       year: "numeric",
                       month: "long",
                       day: "numeric",
@@ -163,9 +183,11 @@
           </Card.Root>
         {/each}
 
-        {#if filteredHistory.length >= 5}
+        {#if hasMore}
           <div class="mt-8 flex justify-center">
-            <Button.Root variant="outline" class="w-full max-w-xs">Load More</Button.Root>
+            <Button.Root variant="outline" class="w-full max-w-xs" onclick={loadMore}
+              >Load More</Button.Root
+            >
           </div>
         {/if}
       </div>
