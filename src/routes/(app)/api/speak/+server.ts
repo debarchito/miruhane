@@ -1,5 +1,5 @@
+import { env } from "$env/dynamic/private";
 import type { RequestHandler } from "./$types";
-import { SPEECHIFY_KEY } from "$env/static/private";
 
 const headers = {
   "Content-Type": "application/json",
@@ -60,7 +60,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
       res = await fetch("https://api.sws.speechify.com/v1/audio/speech", {
         headers: {
           Accept: "*/*",
-          Authorization: `Bearer ${SPEECHIFY_KEY}`,
+          Authorization: `Bearer ${env.SPEECHIFY_KEY}`,
           ...headers,
         },
         method: "POST",

@@ -1,6 +1,6 @@
 import { z } from "zod";
+import { env } from "$env/dynamic/private";
 import type { RequestHandler } from "./$types";
-import { GEMINI_API_KEY } from "$env/static/private";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 type Response = {
@@ -35,7 +35,7 @@ const requestSchema = z.object({
   historyId: z.string(),
 });
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
   model: "gemini-1.5-flash",
   systemInstruction:

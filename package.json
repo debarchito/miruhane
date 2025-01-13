@@ -4,6 +4,7 @@
   "description": "Dynamic AI-driven conversations with seemless voice integration and personalized experiences.",
   "type": "module",
   "scripts": {
+    "start": "node build/index.js",
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",

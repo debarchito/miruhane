@@ -1,5 +1,5 @@
+import { env } from "$env/dynamic/private";
 import type { RequestHandler } from "./$types";
-import { HUGGINGFACE_TOKEN } from "$env/static/private";
 
 const headers = {
   "Content-Type": "application/json",
@@ -39,7 +39,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
   const res = await fetch("https://api-inference.huggingface.co/models/openai/whisper-base", {
     headers: {
-      Authorization: `Bearer ${HUGGINGFACE_TOKEN}`,
+      Authorization: `Bearer ${env.HUGGINGFACE_TOKEN}`,
       ...headers,
     },
     method: "POST",
