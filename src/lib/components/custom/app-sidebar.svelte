@@ -68,7 +68,7 @@
   };
 </script>
 
-<Sidebar.Root bind:ref variant="inset" {...restProps}>
+<Sidebar.Root variant="inset" bind:ref {...restProps}>
   <Sidebar.Header>
     <Sidebar.Menu>
       <Sidebar.MenuItem>
