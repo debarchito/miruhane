@@ -13,13 +13,13 @@
         id: 0,
         sender: "bot",
         text: "Hello, how can I assist you today?",
-        timestamp: "2:30pm",
+        timestamp: "2:30 PM",
       },
       {
         id: 1,
         sender: "user",
         text: "I need help with my order.",
-        timestamp: "2:35pm",
+        timestamp: "2:35 PM",
       },
     ]);
 
