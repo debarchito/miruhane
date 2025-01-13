@@ -1,0 +1,11 @@
+.git
+.devenv
+.direnv
+.helix
+.svelte-kit
+.devenv.flake.nix
+.pre-commit-config.yaml
+.gitignore
+*.md
+node_modules
+build

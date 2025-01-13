@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: miruhanedb
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: miruhanedb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - miruhane-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d miruhanedb"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: miruhane
+    ports:
+      - "3000:3000"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      HUGGINGFACE_TOKEN: ${HUGGINGFACE_TOKEN}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      SPEECHIFY_KEY: ${SPEECHIFY_KEY}
+    depends_on:
+      - db
+    networks:
+      - miruhane-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "3000"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+networks:
+  miruhane-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
