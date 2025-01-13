@@ -13,13 +13,13 @@
         id: 0,
         sender: "bot",
         text: "Hello, how can I assist you today?",
-        timestamp: "Miruhane . 2:30pm",
+        timestamp: "2:30pm",
       },
       {
         id: 1,
         sender: "user",
         text: "I need help with my order.",
-        timestamp: "You . 2:35pm",
+        timestamp: "2:35pm",
       },
     ]);
 
@@ -105,7 +105,7 @@
         >
           <div class={`max-w-[75%] break-words rounded-lg px-4 py-2`}>
             <div class="pb-1 text-sm text-gray-400">
-              {timestamp}
+                {sender === "bot" ? "Miruhane • " : "You • "} {timestamp}
             </div>
             <div
               class={`rounded-2xl p-4 ${sender === "bot" ? "bg-secondary/30" : "bg-primary text-primary-foreground"} shadow-lg`}
