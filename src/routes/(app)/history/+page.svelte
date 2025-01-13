@@ -155,6 +155,9 @@
                       year: "numeric",
                       month: "long",
                       day: "numeric",
+                    })} at {new Date(historyEntry.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })}
                   </time>
                 </div>
