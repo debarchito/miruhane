@@ -1,9 +1,4 @@
-## Some important info
-
-1. The setup assumes a UNIX or UNIX-like environment (such as **macOS** or **Linux**). If you are on Windows, it's highly recommened to use **Windows Subsystem for Linux v2** (WSL2). You can follow [Microsoft's WSL2 installation guide](https://learn.microsoft.com/en-us/windows/wsl/install) for more information.
-2. **miruhane.** primarily uses [devenv](https://devenv.sh/) and [Docker](https://www.docker.com/) for its development. While **devenv** is not mandatory to use, it is highly recommended. Alternative installation steps to substitute **devenv** will be provided. For, **WSL2** users, it's recommended to install the **Docker Engine** directly inside your **WSL2** distro; not using **Docker Desktop**. You can follow [Docker's official guide](https://docs.docker.com/engine/install/) for more information. It steamlines the development process and ensures that the development environment is consistent. You are free to substitue **Docker** for any other OCI compliant container runtime like **Podman** that can run **Docker Compose** files.
-
-## Run
+## 1. Run
 
 You can use docker compose to build and run the project. The **docker-compose-prod.yml** file is provided for this purpose.
 
@@ -18,7 +13,12 @@ docker compose -f docker-compose-prod.yml up -d
 
 Hopefully, you don't encounter any mirror issues due to npm registry. If you do, try to adjust your proxy settings or use some other corepack mirror closest to you. Alternatively, try one of the development setups and build the project manually.
 
-## Development Setup (devenv)
+## 2. ⚠️ Some important info ⚠️
+
+1. The setup assumes a UNIX or UNIX-like environment (such as **macOS** or **Linux**). If you are on Windows, it's highly recommened to use **Windows Subsystem for Linux v2** (WSL2). You can follow [Microsoft's WSL2 installation guide](https://learn.microsoft.com/en-us/windows/wsl/install) for more information.
+2. **miruhane.** primarily uses [devenv](https://devenv.sh/) and [Docker](https://www.docker.com/) for its development. While **devenv** is not mandatory to use, it is highly recommended. Alternative installation steps to substitute **devenv** will be provided. For, **WSL2** users, it's recommended to install the **Docker Engine** directly inside your **WSL2** distro; not using **Docker Desktop**. You can follow [Docker's official guide](https://docs.docker.com/engine/install/) for more information. It steamlines the development process and ensures that the development environment is consistent. You are free to substitue **Docker** for any other OCI compliant container runtime like **Podman** that can run **Docker Compose** files.
+
+## 3.1 Development Setup (devenv)
 
 The required **devenv** configuration is already provided in the repository. Simply changing your directory to the repository root should activate the **devenv** environment. Now, run:
 
@@ -64,7 +64,7 @@ pnpm start
 node build/index.js
 ```
 
-## Development Setup (alternative)
+## 3.2 Development Setup (alternative)
 
 Install [pnpm](https://pnpm.io/) globally using either **curl** or **wget**. You can also use **npm**, **yarn** or some other package manager if you prefer. This guide assumes you are using **pnpm**.
 
@@ -142,6 +142,6 @@ node build/index.js
 
 ...and you are good to go! You can also add a custom task to automate this process. We don't need such a task as **devenv** already does this for us automatically.
 
-## LICENSE
+## 4. LICENSE
 
 This project is licensed under the MIT License. See the [LICENSE](/LICENSE) file for details.
