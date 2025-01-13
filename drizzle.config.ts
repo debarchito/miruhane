@@ -1,6 +1,7 @@
 import { defineConfig } from "drizzle-kit";
 
 if (!process.env.POSTGRES_USER) throw new Error("Postgres user is not set");
+if (!process.env.POSTGRES_DB) throw new Error("Postgres database is not set");
 if (!process.env.POSTGRES_PASSWORD) throw new Error("Postgres password is not set");
 
 export default defineConfig({
@@ -11,7 +12,7 @@ export default defineConfig({
     port: 5432,
     user: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASSWORD,
-    database: "miruhanedb",
+    database: process.env.POSTGRES_DB,
   },
   verbose: true,
   strict: true,

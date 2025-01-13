@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: miruhanedb
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -29,6 +29,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
       HUGGINGFACE_TOKEN: ${HUGGINGFACE_TOKEN}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       SPEECHIFY_KEY: ${SPEECHIFY_KEY}

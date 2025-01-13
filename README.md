@@ -6,7 +6,7 @@ You can use docker compose to build and run the project. The **docker-compose-pr
 cp .env.example .env
 # Edit the .env file with your fav text editor
 hx .env
-# set POSTGRES_USER and POSTGRES_PASSWORD to your desired values
+# set POSTGRES_USER, POSTGRES_PASSWORD and POSTGRES_DB to your desired values
 # setup your API keys accordingly; I've attached some reference links
 docker compose -f docker-compose-prod.yml up -d
 ```
@@ -26,7 +26,7 @@ The required **devenv** configuration is already provided in the repository. Sim
 cp .env.example .env
 # Edit the .env file with your fav text editor
 hx .env
-# set POSTGRES_USER and POSTGRES_PASSWORD to your desired values
+# set POSTGRES_USER, POSTGRES_PASSWORD and POSTGRES_DB to your desired values
 # setup your API keys accordingly; I've attached some reference links
 ```
 
@@ -86,7 +86,7 @@ Now, run:
 cp .env.example .env
 # Edit the .env file with your fav text editor
 hx .env
-# set POSTGRES_USER and POSTGRES_PASSWORD to your desired values
+# set POSTGRES_USER, POSTGRES_PASSWORD and POSTGRES_DB to your desired values
 # setup your API keys accordingly; I've attached some reference links
 ```
 

@@ -69,7 +69,7 @@
           </DropdownMenu.Item>
           <DropdownMenu.Item>
             <Settings />
-            <a href="#">Settings</a>
+            <a href="/">Settings</a>
           </DropdownMenu.Item>
         </DropdownMenu.Group>
         <DropdownMenu.Separator />
