@@ -7,6 +7,7 @@ cp .env.example .env
 # Edit the .env file with your fav text editor
 hx .env
 # set POSTGRES_USER, POSTGRES_PASSWORD and POSTGRES_DB to your desired values
+# set POSTGRES_HOST and POSTGRES_PORT. 0.0.0.0 and 5432 are good defaults
 # setup your API keys accordingly; I've attached some reference links
 docker compose -f docker-compose-prod.yml up -d
 ```
@@ -27,6 +28,7 @@ cp .env.example .env
 # Edit the .env file with your fav text editor
 hx .env
 # set POSTGRES_USER, POSTGRES_PASSWORD and POSTGRES_DB to your desired values
+# set POSTGRES_HOST and POSTGRES_PORT. 0.0.0.0 and 5432 are good defaults
 # setup your API keys accordingly; I've attached some reference links
 ```
 
@@ -87,6 +89,7 @@ cp .env.example .env
 # Edit the .env file with your fav text editor
 hx .env
 # set POSTGRES_USER, POSTGRES_PASSWORD and POSTGRES_DB to your desired values
+# set POSTGRES_HOST and POSTGRES_PORT. 0.0.0.0 and 5432 are good defaults
 # setup your API keys accordingly; I've attached some reference links
 ```
 
