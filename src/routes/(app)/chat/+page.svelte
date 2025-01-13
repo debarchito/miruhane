@@ -10,6 +10,7 @@
   import { Textarea } from "$lib/components/ui/textarea/index.js";
   import AppSidebar from "$lib/components/custom/app-sidebar.svelte";
   import InstantHistory from "$lib/components/custom/instant-history.svelte";
+  import QnaComponent from "$lib/components/custom/qna.svelte";
   import {
     X,
     Play,
@@ -878,6 +879,7 @@
             </div>
           {/if}
         </div>
+        <QnaComponent />
       </div>
     </div>
   </Sidebar.Inset>
